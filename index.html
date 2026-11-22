@@ -336,7 +336,10 @@ nav.bottom,.sheet,#sumCards{display:none}
       <div class="card" style="margin-top:12px;border-top:4px solid var(--elec)"><h2>Elektrik</h2>
         <div class="form" style="margin-top:10px">
           <label>Fatura okuma günü<input type="number" id="s_eday" min="1" max="31"></label>
-          <label>Birim fiyat TL/kWh (vergili)<input type="number" step="any" id="s_ep"></label>
+          <label>Düşük kademe TL/kWh (faturadaki, vergisiz)<input type="number" step="any" id="s_epd"></label>
+          <label>Yüksek kademe TL/kWh (faturadaki, vergisiz)<input type="number" step="any" id="s_epy"></label>
+          <label>Günlük kademe sınırı kWh/gün<input type="number" step="any" id="s_ekad"></label>
+          <label>Vergi çarpanı (BTV+KDV)<input type="number" step="any" id="s_evf"></label>
           <label>SKTT fiyatı TL/kWh (tahmini)<input type="number" step="any" id="s_esk"></label>
           <label>Elektrikli ısıtıcı gücü kW<input type="number" step="any" id="s_eisi"></label>
           <label>Kurutma makinesi kWh/çevrim<input type="number" step="any" id="s_ekur"></label>
@@ -401,7 +404,7 @@ const tl=x=>(x==null||!isFinite(x))?"—":Math.round(x).toLocaleString("tr-TR")+
 function defaultState(){return{
   v:1, demo:false, il:"Ankara", hg:1, pay:3,
   gas:{day:20,kat:0.92,k1:17.88,k2:26.73,ver:90},
-  elec:{day:15,p:3.24,sktt:6.97,isi:2,kur:2.5,ytd:null,ytdt:null},
+  elec:{day:15,p:3.58,pd:2.918965,py:4.320708,kad:8,vf:1.1177,sktt:6.97,isi:2,kur:2.5,ytd:null,ytdt:null},
   water:{day:10,pre:"",t1:10,p1:30,t2:20,p2:45,p3:70,yon:"asan",cam:50},
   readings:[], bills:[], wx:{}, savedAt:0,
   hedef:{gas:null,elec:null,water:null},
@@ -544,6 +547,9 @@ function ytdAt(x){const o=ymd(x);const y0=mk(o.y,1,1);
 const EPROF=[1.15,1.08,1.0,0.92,0.88,0.95,1.1,1.12,0.95,0.92,1.02,1.13];
 const wE=n=>EPROF[ymd(n).m-1];
 function elecRate(){const lr=lastRead("elec"),fr=firstRead("elec");if(!lr||!fr||lr.n===fr.n)return null;const a=Math.max(fr.n,lr.n-14);const u=used("elec",a,lr.n);return u==null?null:u/(lr.n-a)}
+// Mesken günlük kademe: okuma gün sayısı × 8 kWh düşük kademe, kalanı yüksek kademe (faturadaki iki satır)
+function eCost(kwh,days){if(kwh==null)return null;const E=S.elec;const kd=E.kad*days;return (Math.min(kwh,kd)*E.pd+Math.max(0,kwh-kd)*E.py)*E.vf}
+function eKwhForTl(t,days){let a=0,b=1e5;for(let i=0;i<50;i++){const m=(a+b)/2;if(eCost(m,days)>t)b=m;else a=m}return a}
 function elecInfo(){
   const o=ymd(TODAY);const y=o.y;const limNom=ELEC_LIMIT[y]||3000;const lim=Math.min(limNom,ELEC_LIMIT[y+1]||Infinity);const yEnd=mk(y+1,1,1);
   const lr=lastRead("elec");const ytd=lr?ytdAt(lr.n):null;
@@ -551,7 +557,7 @@ function elecInfo(){
   const lrN=lr?lr.n:TODAY;const recW=sum(lrN-14,lrN,wE)/14;const rw=r!=null?r/recW:null;
   const projYear=ytd!=null&&rw!=null?ytd+rw*sum(lrN,yEnd,wE):null;
   const target=lim*payF();
-  const hcap=S.hedef&&S.hedef.elec?S.hedef.elec/S.elec.p/30.4:Infinity;
+  const hcap=S.hedef&&S.hedef.elec?eKwhForTl(S.hedef.elec,30.4)/30.4:Infinity;
   const nextY=n=>(ELEC_LIMIT[y+1]||3000)*payF()*wE(n)/sum(yEnd,mk(y+2,1,1),wE);
   const remNow=ytd!=null?Math.max(0,target-ytd):target*sum(TODAY,yEnd,wE)/sum(mk(y,1,1),yEnd,wE);const Wnow=sum(lrN,yEnd,wE);
   const dayAllow=n=>n>=yEnd?nextY(n):Math.min(hcap*wE(n),remNow*wE(n)/Wnow);
@@ -569,8 +575,13 @@ function elecInfo(){
   const willSktt=projYear!=null&&projYear>lim;
   let crossN=null;if(ytd!=null&&r&&lr){if(ytd>lim)crossN=lr.n-Math.round((ytd-lim)/r);else if(projYear>lim)crossN=lr.n+Math.round((lim-ytd)/r)}
   let sktN=null;if(crossN!=null){const c=ymd(crossN);let m=c.m+3,yy=c.y;if(m>12){m-=12;yy++}sktN=mk(yy,m,1)}
-  const price=(sktN!=null&&TODAY>=sktN)?S.elec.sktt:S.elec.p;
-  return {monthPlan,dayAllow,rw,y,lim,limNom,crossN,sktN,target,ytd,projYear,daily,r,ws,we,weekPlan,weekUsed,bp,bpUsed,bpPlan,bpProj,willSktt,price,yEnd,lr}}
+  const sktOn=sktN!=null&&TODAY>=sktN;const E=S.elec;
+  const rd=r!=null&&r>0?r:Math.max(0.1,bpPlan/Math.max(1,bp.end-bp.start));
+  const price=sktOn?E.sktt:eCost(rd*30,30)/(rd*30);
+  const marg=sktOn?E.sktt:(rd>E.kad?E.py:E.pd)*E.vf;
+  const bill=(k,d)=>k==null?null:(sktOn?k*E.sktt:eCost(k,d));
+  const hiK=rd>E.kad?(rd-E.kad)*(bp.end-bp.start):0;
+  return {sktOn,rd,marg,bill,hiK,monthPlan,dayAllow,rw,y,lim,limNom,crossN,sktN,target,ytd,projYear,daily,r,ws,we,weekPlan,weekUsed,bp,bpUsed,bpPlan,bpProj,willSktt,price,yEnd,lr}}
 
 // ---------- SU ANALİZİ ----------
 function waterCost(m3){const W=S.water;if(m3==null)return null;
@@ -616,7 +627,7 @@ function renderCards(){
     <div class="cost"><span>Bu dönem fatura tahmini<br><span class="small muted">${fmtDs(bp.start)} – ${fmtDs(bp.end)}</span></span><span class="num">${gBillOk?tl(gBill):"—"}</span></div></div>`;
   const EI=elecInfo();
   const eP=EI.projYear!=null?EI.projYear/EI.lim:null;
-  const eBill=EI.bpProj!=null?EI.bpProj*EI.price:null;
+  const eBill=EI.bill(EI.bpProj,EI.bp.end-EI.bp.start);
   const elecCard=`<div class="card ucard" style="--c:var(--elec)"><div class="hd"><h2>Elektrik</h2>${status(eP)}</div>
     ${meter("Bu hafta",EI.weekUsed,EI.weekPlan,"kWh",resetTxt(EI.we),null)}
     ${meter("Fatura dönemi",EI.bpUsed,EI.bpPlan,"kWh",fmtDs(EI.bp.start)+" – "+fmtDs(EI.bp.end)+" · "+resetTxt(EI.bp.end),null)}
@@ -643,7 +654,7 @@ function renderAdvice(ctx){
     if(gap>0){
       const kwh=gap*heatKwhPerSm3;const hours=kwh/(S.elec.isi||2);
       const overCost=G.proj*(S.gas.k2-S.gas.k1); // tüm dilim 2. kademeye kayar
-      const elecCost=kwh*EI.price-gap*S.gas.k1;
+      const elecCost=kwh*EI.marg-gap*S.gas.k1;
       const eSlack=EI.projYear!=null?EI.target-EI.projYear:null;
       let t=`Bu gidişle ${fmtDs(G.seg.end-1)} tarihine kadar <b>${f1(G.proj)} Sm³</b> harcarsın. Limit <b>${f1(G.lim)} Sm³</b>. Limit aşılırsa bu dilimin tamamı 2. kademeden hesaplanır ve fatura yaklaşık <b>${tl(overCost)}</b> artar. `;
       if(eSlack!=null&&eSlack>kwh){t+=`Elektrikte yıllık <b>${f0(eSlack)} kWh</b> boşluğun var. Fazla olan ${f1(gap)} Sm³'ü elektrikli ısıtıcıyla karşılarsan bu yaklaşık <b>${f0(kwh)} kWh</b> eder. ${S.elec.isi} kW ısıtıcıyla dilim sonuna kadar toplam <b>${f1(hours)} saat</b> çalıştırman gerekir, maliyeti yaklaşık ${tl(Math.max(0,elecCost))}. Bu, gaz limitini aşmaktan ${elecCost<overCost?"<b>daha ucuz</b>":"daha pahalı"}.`}
@@ -677,7 +688,8 @@ function renderAdvice(ctx){
   }
   // 4) Elektrik
   if(EI.projYear!=null){
-    if(EI.projYear>EI.lim){const gecti=EI.ytd>EI.lim;out.push(adv("--bad",gecti?"Elektrik: yıllık sınırı geçtin":"Elektrik: yıllık sınır aşılacak gibi",`Yıl sonu tahmini <b>${f0(EI.projYear)} kWh</b>, sınır <b>${f0(EI.lim)} kWh</b>.${EI.lim<EI.limNom?` ${EI.y} limiti ${f0(EI.limNom)} kWh görünse de EPDK geçen yılın tüketimine de baktığı için ${EI.y} toplamın ${EI.y+1}'nin ${f0(EI.lim)} kWh sınırıyla da karşılaştırılıyor.`:""} Sınırı ${EI.crossN?fmtD(EI.crossN)+" civarında ":""}${gecti?"geçtiğin":"geçeceğin"} için, geçtiğin aydan 3 ay sonra, <b>${EI.sktN?fmtD(EI.sktN)+" "+ymd(EI.sktN).y:""}</b> itibarıyla son kaynak tarifesine (SKTT) geçersin ve <b>o takvim yılının sonuna kadar</b> bu tarifede kalırsın. Yıl içinde az harcasan da çıkamazsın (EPDK/Enerjisa). kWh fiyatı yaklaşık ${f1(S.elec.p)} TL'den ${f1(S.elec.sktt)} TL'ye çıkar. ${gecti?"Bu yıl için geçiş artık önlenemez. Tasarruf yine de faturanı düşürür.":`Kalan günlerde günde en fazla <b>${f1(EI.daily)} kWh</b> kullanırsan sınırın altında kalırsın.`}`))}
+    if(!EI.sktOn&&EI.r!=null&&EI.rd>S.elec.kad){const E=S.elec;const fark=(E.py-E.pd)*E.vf;out.push(adv("--warn","Elektrik: günlük 8 kWh kademesini geçiyorsun",`Günde ortalama <b>${f1(EI.rd)} kWh</b> kullanıyorsun. Faturada her okuma günü için ilk <b>${f0(E.kad)} kWh</b> düşük kademeden (${f1(E.pd*E.vf)} TL), fazlası yüksek kademeden (${f1(E.py*E.vf)} TL, yaklaşık %${f0((E.py/E.pd-1)*100)} pahalı) hesaplanır. Bu dönem yaklaşık <b>${f0(EI.hiK)} kWh</b> yüksek kademeye düşer, fazladan ödenen yaklaşık <b>${tl(EI.hiK*fark)}</b>. Bu kademe her faturada yeniden başlar, yıllık SKTT sınırından ayrıdır.`))}
+    if(EI.projYear>EI.lim){const gecti=EI.ytd>EI.lim;out.push(adv("--bad",gecti?"Elektrik: yıllık sınırı geçtin":"Elektrik: yıllık sınır aşılacak gibi",`Yıl sonu tahmini <b>${f0(EI.projYear)} kWh</b>, sınır <b>${f0(EI.lim)} kWh</b>.${EI.lim<EI.limNom?` ${EI.y} limiti ${f0(EI.limNom)} kWh görünse de EPDK geçen yılın tüketimine de baktığı için ${EI.y} toplamın ${EI.y+1}'nin ${f0(EI.lim)} kWh sınırıyla da karşılaştırılıyor.`:""} Sınırı ${EI.crossN?fmtD(EI.crossN)+" civarında ":""}${gecti?"geçtiğin":"geçeceğin"} için, geçtiğin aydan 3 ay sonra, <b>${EI.sktN?fmtD(EI.sktN)+" "+ymd(EI.sktN).y:""}</b> itibarıyla son kaynak tarifesine (SKTT) geçersin ve <b>o takvim yılının sonuna kadar</b> bu tarifede kalırsın. Yıl içinde az harcasan da çıkamazsın (EPDK/Enerjisa). kWh fiyatı yaklaşık ${f1(EI.price)} TL'den ${f1(S.elec.sktt)} TL'ye çıkar. ${gecti?"Bu yıl için geçiş artık önlenemez. Tasarruf yine de faturanı düşürür.":`Kalan günlerde günde en fazla <b>${f1(EI.daily)} kWh</b> kullanırsan sınırın altında kalırsın.`}`))}
     const wk=EI.weekUsed!=null?EI.weekUsed-EI.weekPlan*((Math.min(EI.lr?EI.lr.n:TODAY,EI.we)-EI.ws)/7):0;
     const cycles=S.elec.kur>0?Math.floor(Math.max(0,EI.weekPlan-(EI.weekUsed||0))/S.elec.kur):0;
     if(EI.weekUsed!=null&&wk>S.elec.kur){out.push(adv("--elec","Kurutma makinesini bu hafta kullanma",`Bu hafta elektrikte planın ${f1(wk)} kWh önündesin. Bir kurutma ${f1(S.elec.kur)} kWh harcıyor. Çamaşırı askıda kurut ya da kurutmayı ${fmtD(EI.we)} gününe, yeni haftaya bırak.`))}
@@ -746,7 +758,7 @@ function renderAvg(){
     g+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" font-size="11">${AYLAR[i].slice(0,3)}</text>`});
   $("chart").innerHTML=`<div class="legend" style="margin-bottom:6px"><span><i style="background:var(--gas)"></i>Limit</span><span><i style="background:var(--muted);opacity:.45"></i>İl ortalaması</span><span><i style="background:var(--accent);border-radius:50%"></i>Senin faturaların</span></div><div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:520px" role="img" aria-label="Aylık doğalgaz limiti grafiği">${g}</svg></div>`;
   const heatK=KWH_PER_SM3*(S.gas.ver/100);
-  $("swapInfo").innerHTML=`1 Sm³ doğalgaz kombide yaklaşık ${f1(heatK)} kWh ısı verir. 1. kademede ısının kWh'i ${f1(S.gas.k1/heatK)} TL, 2. kademede ${f1(S.gas.k2/heatK)} TL. Elektrikli ısıtıcıda ${f1(S.elec.p)} TL. Yani normalde gaz ucuzdur. Ama gaz limitini birkaç m³ aşmak bütün ayı pahalı kademeye taşır. O durumda aradaki farkı elektrikle kapatmak daha ucuza gelir. Panel bunu senin için hesaplar.`;
+  $("swapInfo").innerHTML=`1 Sm³ doğalgaz kombide yaklaşık ${f1(heatK)} kWh ısı verir. 1. kademede ısının kWh'i ${f1(S.gas.k1/heatK)} TL, 2. kademede ${f1(S.gas.k2/heatK)} TL. Elektrikli ısıtıcıda ${f1(S.elec.pd*S.elec.vf)}–${f1(S.elec.py*S.elec.vf)} TL (günlük 8 kWh'ten sonra yüksek kademe). Yani normalde gaz ucuzdur. Ama gaz limitini birkaç m³ aşmak bütün ayı pahalı kademeye taşır. O durumda aradaki farkı elektrikle kapatmak daha ucuza gelir. Panel bunu senin için hesaplar.`;
 }
 
 function renderTables(){
@@ -780,7 +792,7 @@ function renderReminders(){
 function fillSettings(){const g=S.gas,e=S.elec,w=S.water;
   const set=(id,v)=>{const el=$(id);if(el)el.value=v==null?"":v};
   set("s_hg",S.hg);set("s_pay",S.pay);set("s_gday",g.day);set("s_gkat",g.kat);set("s_gk1",g.k1);set("s_gk2",g.k2);set("s_gver",g.ver);
-  set("s_eday",e.day);set("s_ep",e.p);set("s_esk",e.sktt);set("s_eisi",e.isi);set("s_ekur",e.kur);set("s_eytd",e.ytd);set("s_eytdt",e.ytdt);
+  set("s_eday",e.day);set("s_epd",e.pd);set("s_epy",e.py);set("s_ekad",e.kad);set("s_evf",e.vf);set("s_esk",e.sktt);set("s_eisi",e.isi);set("s_ekur",e.kur);set("s_eytd",e.ytd);set("s_eytdt",e.ytdt);
   set("s_wday",w.day);set("s_wpre",w.pre);set("s_w1",w.t1);set("s_w1p",w.p1);set("s_w2",w.t2);set("s_w2p",w.p2);set("s_w3p",w.p3);set("s_wyon",w.yon);set("s_wcam",w.cam)}
 
 function render(){
@@ -802,7 +814,7 @@ function renderSummary(){
   // Elektrik
   const EI=elecInfo();const eHak=EI.monthPlan;const eu=usedFrom("elec",ms,me);const eUsed=eu?eu.u:null;
   const eProj=eUsed!=null&&EI.r!=null&&EI.lr?eUsed+EI.rw*sum(Math.max(EI.lr.n,ms),me,wE)+(eu.from>ms?EI.rw*sum(ms,eu.from,wE):0):null;
-  const eBill=eProj!=null?eProj*EI.price:null;
+  const eBill=EI.bill(eProj,me-ms);
   // Su (fatura dönemi)
   const WI=waterInfo();const wHak=wBudget();
   const cell=(v,u,t)=>`<td class="num">${f1(v)} ${u}${t!=null?`<small>≈ ${tl(t)}</small>`:""}</td>`;
@@ -825,7 +837,7 @@ function renderSummary(){
   const t=[];
   const gLimTl=L*S.gas.k1;
   t.push(`<div><span class="dot" style="background:var(--gas)"></span><b>Doğalgaz:</b> ${S.il}'da ${ay} limiti <b>${f1(L)} Sm³</b> (≈ ${tl(gLimTl)}). ${hG!=null&&hG<L*payF()?`Senin hedefin ${tl(S.hedef.gas)}, bu da <b>${f1(hG)} Sm³</b> ediyor. Plan hedefine göre yapıldı.`:hG!=null?`Hedefin (${tl(S.hedef.gas)}) limitten yüksek, plan limite göre yapıldı.`:`Hedef girmedin, plan limitin %${100-S.pay}'si hedeflenerek yapıldı.`} Bu hafta en fazla <b>${f1(GW.plan)} Sm³</b>, bugün <b>${f1(gToday)} Sm³</b> harca. Limiti aşarsan ayın tamamı 2. kademeden (${f1(S.gas.k2)} TL/Sm³) hesaplanır.</div>`);
-  t.push(`<div><span class="dot" style="background:var(--elec)"></span><b>Elektrik:</b> Yıllık sınır <b>${f0(EI.lim)} kWh</b>${EI.lim<EI.limNom?` (${EI.y} limiti ${f0(EI.limNom)} kWh, ama ${EI.y+1}'de SKTT'ye girmemek için ${EI.y} toplamın ${f0(EI.lim)} kWh'i geçmemeli)`:""}. Yılın kalanına göre bu ay hakkın <b>${f0(eHak)} kWh</b> (≈ ${tl(eHak*EI.price)}), haftalık <b>${f1(EI.weekPlan)} kWh</b>, günlük <b>${f1(EI.daily)} kWh</b>. Aralık–Şubat (aydınlatma, ısıtıcı) ve Temmuz–Ağustos (klima) tüketimi genelde %10–15 yüksek gelir. Plan bu aylara daha çok pay ayırır, yıl sonu tahminini de buna göre yapar.${S.hedef.elec?` Hedefin ${tl(S.hedef.elec)} = ayda ${f0(S.hedef.elec/S.elec.p)} kWh.`:""}</div>`);
+  t.push(`<div><span class="dot" style="background:var(--elec)"></span><b>Elektrik:</b> Yıllık sınır <b>${f0(EI.lim)} kWh</b>${EI.lim<EI.limNom?` (${EI.y} limiti ${f0(EI.limNom)} kWh, ama ${EI.y+1}'de SKTT'ye girmemek için ${EI.y} toplamın ${f0(EI.lim)} kWh'i geçmemeli)`:""}. Yılın kalanına göre bu ay hakkın <b>${f0(eHak)} kWh</b> (≈ ${tl(eHak*EI.price)}), haftalık <b>${f1(EI.weekPlan)} kWh</b>, günlük <b>${f1(EI.daily)} kWh</b>. Aralık–Şubat (aydınlatma, ısıtıcı) ve Temmuz–Ağustos (klima) tüketimi genelde %10–15 yüksek gelir. Plan bu aylara daha çok pay ayırır, yıl sonu tahminini de buna göre yapar.${S.hedef.elec?` Hedefin ${tl(S.hedef.elec)} = ayda ${f0(eKwhForTl(S.hedef.elec,30.4))} kWh.`:""}</div>`);
   t.push(`<div><span class="dot" style="background:var(--water)"></span><b>Su:</b> 1. kademe ${f1(S.water.t1)} m³. Bu dönem hakkın <b>${f1(wHak)} m³</b>, haftalık <b>${f1(WI.weekPlan)} m³</b> (yaklaşık ${f0(WI.weekPlan*1000/7)} litre/gün).</div>`);
   $("sumText").innerHTML=t.join("");
 }
@@ -863,7 +875,7 @@ function calcC(c){const T=CIHAZ.find(x=>x.k===c.k);if(!T)return null;const m=T.e
   const suM3=T.su?T.su*hafta*52/12/1000:0;
   return {T,m,use,month,suM3,hafta,gun,dk,w}}
 function renderCihaz(){
-  const p=S.elec.p;$("cihazFiyat").textContent="Elektrik "+f1(p)+" TL/kWh ile (faturandan güncellenir)";
+  const EIc=elecInfo();const p=EIc.marg;$("cihazFiyat").textContent="Elektrik "+f1(p)+" TL/kWh ile ("+(EIc.sktOn?"SKTT":EIc.rd>S.elec.kad?"günde "+f0(S.elec.kad)+" kWh'i geçtiğin için yüksek kademe":"düşük kademe")+", vergiler dahil)";
   const rows=S.cihazlar.map(c=>({c,r:calcC(c)})).filter(x=>x.r);
   const total=rows.reduce((a,x)=>a+x.r.month,0);const totSu=rows.reduce((a,x)=>a+x.r.suM3,0);
   // tek kullanım kartları
@@ -943,7 +955,7 @@ $("readForm").onsubmit=e=>{e.preventDefault();dropDemo();const t=$("r_tur").valu
 $("setForm").onsubmit=e=>{e.preventDefault();const n=id=>{const v=parseFloat($(id).value);return isFinite(v)?v:null};
   S.hg=+$("s_hg").value;S.pay=n("s_pay")??3;
   Object.assign(S.gas,{day:n("s_gday")||20,kat:n("s_gkat")||0.92,k1:n("s_gk1")||17.88,k2:n("s_gk2")||26.73,ver:n("s_gver")||90});
-  Object.assign(S.elec,{day:n("s_eday")||15,p:n("s_ep")||3.24,sktt:n("s_esk")||6.97,isi:n("s_eisi")||2,kur:n("s_ekur")||2.5,ytd:n("s_eytd"),ytdt:$("s_eytdt").value||null});
+  Object.assign(S.elec,{day:n("s_eday")||15,pd:n("s_epd")||2.918965,py:n("s_epy")||4.320708,kad:n("s_ekad")||8,vf:n("s_evf")||1.1177,sktt:n("s_esk")||6.97,isi:n("s_eisi")||2,kur:n("s_ekur")||2.5,ytd:n("s_eytd"),ytdt:$("s_eytdt").value||null});
   Object.assign(S.water,{day:n("s_wday")||10,pre:$("s_wpre").value,t1:n("s_w1")||10,p1:n("s_w1p")||0,t2:n("s_w2")||20,p2:n("s_w2p")||0,p3:n("s_w3p")||0,yon:$("s_wyon").value,cam:n("s_wcam")||50});
   save();render();$("setStatus").textContent="Kaydedildi."};
 $("s_wpre").onchange=()=>{if($("s_wpre").value==="antalya"){$("s_w1").value=20;$("s_w1p").value=33.31;$("s_w2").value=40;$("s_w2p").value=81.93;$("s_w3p").value=117.05}};
@@ -959,7 +971,7 @@ $("billForm").onsubmit=e=>{e.preventDefault();dropDemo();const n=id=>{const v=pa
   if(b.e2!=null){S.readings=S.readings.filter(r=>!(r.t===t&&r.d===bit));S.readings.push({id:uid(),t,d:bit,v:b.e2})}
   const day=ymd(dn(bit)).d;
   if(t==="gas"){S.gas.day=day;if(b.kat)S.gas.kat=b.kat;if(b.tk&&b.tl){const p=b.tl/b.tk;if(b.kad==="2")S.gas.k2=Math.round(p*100)/100;else{S.gas.k1=Math.round(p*100)/100;S.gas.k2=Math.round(p*18/10.625*100)/100}}}
-  if(t==="elec"){S.elec.day=day;if(b.tk&&b.tl)S.elec.p=Math.round(b.tl/b.tk*100)/100;if(b.ytd!=null){S.elec.ytd=b.ytd;S.elec.ytdt=bit}}
+  if(t==="elec"){S.elec.day=day;const kf=window._kf||{};if(kf.pd>0)S.elec.pd=kf.pd;if(kf.py>0)S.elec.py=kf.py;window._kf=null;if(b.tk&&b.tl)S.elec.p=Math.round(b.tl/b.tk*100)/100;if(b.ytd!=null){S.elec.ytd=b.ytd;S.elec.ytdt=bit}}
   if(t==="water"){S.water.day=day}
   save();fillSettings();render();$("billSaved").textContent="Kaydedildi. Fiyatlar ve okuma günü bu faturaya göre güncellendi."};
 $("exportCsv").onclick=async()=>{const rows=["tur,tarih,endeks"].concat(S.readings.map(r=>`${r.t},${r.d},${r.v}`));
@@ -970,8 +982,8 @@ $("exportCsv").onclick=async()=>{const rows=["tur,tarih,endeks"].concat(S.readin
 // ---------- CLAUDE İLE OKUMA ----------
 let sample=null;
 const BILL_PROMPT=`Bu görsel(ler) Türkiye'den bir doğalgaz, elektrik ya da su faturası. Faturayı oku ve YALNIZCA şu JSON nesnesini döndür:
-{"tur":"gas"|"elec"|"water","ilk_okuma":"YYYY-MM-DD"|null,"son_okuma":"YYYY-MM-DD"|null,"ilk_endeks":number|null,"son_endeks":number|null,"tuketim":number|null,"duzeltme_katsayisi":number|null,"tutar_tl":number|null,"kademe":1|2|null,"yillik_tuketim_kwh":number|null}
-Kurallar: doğalgazda "tuketim" düzeltilmiş tüketimdir (Sm³), sayaçtan okunan m³ değil. Elektrikte kWh, suda m³. "yillik_tuketim_kwh" elektrik faturasında yılbaşından beri ya da son 12 ay tüketimi yazıyorsa onu yaz. Türkçe sayı biçimini çevir: "1.234,56" → 1234.56. Okuyamadığın alanı null bırak, tahmin etme.`;
+{"tur":"gas"|"elec"|"water","ilk_okuma":"YYYY-MM-DD"|null,"son_okuma":"YYYY-MM-DD"|null,"ilk_endeks":number|null,"son_endeks":number|null,"tuketim":number|null,"duzeltme_katsayisi":number|null,"tutar_tl":number|null,"kademe":1|2|null,"yillik_tuketim_kwh":number|null,"dusuk_kademe_fiyat":number|null,"yuksek_kademe_fiyat":number|null}
+Kurallar: doğalgazda "tuketim" düzeltilmiş tüketimdir (Sm³), sayaçtan okunan m³ değil. Elektrikte kWh, suda m³. Elektrik faturasında "Düşük Kad." ve "Yüksek Kad." satırlarının birim fiyatını (TL/kWh, vergisiz) "dusuk_kademe_fiyat" ve "yuksek_kademe_fiyat" alanlarına yaz. "yillik_tuketim_kwh" elektrik faturasında yılbaşından beri ya da son 12 ay tüketimi yazıyorsa onu yaz. Türkçe sayı biçimini çevir: "1.234,56" → 1234.56. Okuyamadığın alanı null bırak, tahmin etme.`;
 const METER_PROMPT=`Bu bir sayaç fotoğrafı (doğalgaz, elektrik ya da su). Sayaçtaki endeksi oku. Kırmızı haneler ya da virgülden sonrası ondalıktır. YALNIZCA şu JSON'u döndür: {"tur":"gas"|"elec"|"water"|null,"endeks":number|null,"emin":true|false}`;
 function sampleErr(e){const m={not_granted:"Claude'a izin verilmedi. Bilgileri elle girebilirsin.",rate_limited:"Şu an çok istek var, biraz sonra tekrar dene.",image_rejected:"Bu görsel okunamadı. Daha net bir fotoğraf dene.",invalid_json:"Fatura net okunamadı. Daha yakından çekip tekrar dene ya da elle gir.",images_unavailable:"Bu görünümde görsel gönderilemiyor. Bilgileri elle gir.",session_expired:"Oturum süresi dolmuş, yeniden giriş yap."};return m[e&&e.code]||"Okunamadı. Bilgileri elle girebilirsin."}
 async function readBill(files){if(!files||!files.length)return;
@@ -982,7 +994,7 @@ async function readBill(files){if(!files||!files.length)return;
     if(["gas","elec","water"].includes(j.tur))$("b_tur").value=j.tur;
     const set=(id,v)=>{if(v!=null&&v!=="")$(id).value=v};
     set("b_bas",j.ilk_okuma);set("b_bit",j.son_okuma);set("b_e1",j.ilk_endeks);set("b_e2",j.son_endeks);set("b_tk",j.tuketim);set("b_kat",j.duzeltme_katsayisi);set("b_tl",j.tutar_tl);
-    $("b_kad").value=j.kademe?String(j.kademe):"";set("b_ytd",j.yillik_tuketim_kwh);
+    $("b_kad").value=j.kademe?String(j.kademe):"";set("b_ytd",j.yillik_tuketim_kwh);window._kf={pd:j.dusuk_kademe_fiyat,py:j.yuksek_kademe_fiyat};
     $("billStatus").textContent="Okundu. Rakamları faturayla karşılaştır, sonra Kaydet'e bas.";
   }catch(e){$("billStatus").textContent=sampleErr(e)}}
 async function readMeter(file){if(!file)return;if(!sample){$("readStatus").textContent="Bu görünümde fotoğraftan okuma yok. Endeksi elle gir.";return}
