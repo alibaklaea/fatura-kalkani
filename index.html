@@ -4,12 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1c4e80">
-<link rel="icon" href="ikon.png">
+<title>Fatura Kalkanı</title>
+<meta property="og:title" content="Fatura Kalkanı">
+<meta property="og:description" content="Gaz, elektrik ve su limitin güvende: haftalık plan, fatura okuma, kademe uyarıları.">
+<meta property="og:image" content="https://alibaklaea.github.io/fatura-kalkani/logo/logo-yatay.png">
+<link rel="icon" href="ikon.png"><link rel="apple-touch-icon" href="ikon.png">
 <script>window.LP_VENDOR="vendor/"</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>Limit Pusulası</title>
+<title>Fatura Kalkanı</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -163,7 +167,7 @@ nav.bottom,.sheet,#sumCards{display:none}
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>Limit Pusulası</h1>
+      <h1 style="display:flex;align-items:center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true" style="width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.3em;flex:none"> <defs> <linearGradient id="fk-kalkan" x1="0" y1="0" x2="0" y2="1"> <stop offset="0" stop-color="#2160A0"/> <stop offset="1" stop-color="#0E2C4E"/> </linearGradient> <linearGradient id="fk-alev" x1="0" y1="1" x2="0" y2="0"> <stop offset="0" stop-color="#FF5A1F"/> <stop offset="1" stop-color="#FFA23A"/> </linearGradient> <linearGradient id="fk-damla" x1="0" y1="0" x2="0" y2="1"> <stop offset="0" stop-color="#7FD0FF"/> <stop offset="1" stop-color="#2C8FE6"/> </linearGradient> </defs> <path fill="url(#fk-kalkan)" d="M256 28 C322 58 384 72 452 76 C456 252 424 386 256 486 C88 386 56 252 60 76 C128 72 190 58 256 28 Z"/> <path fill="none" stroke="#FFFFFF" stroke-opacity=".28" stroke-width="10" d="M256 62 C312 86 366 99 422 104 C423 252 396 364 256 450 C116 364 89 252 90 104 C146 99 200 86 256 62 Z"/> <g transform="translate(146 226) scale(1.08)"> <path fill="url(#fk-alev)" d="M0 -66 C26 -38 50 -16 50 18 C50 48 27 68 0 68 C-27 68 -50 48 -50 18 C-50 -4 -38 -20 -26 -32 C-24 -12 -14 0 -2 4 C-6 -22 -10 -44 0 -66 Z"/> <path fill="#FFE08A" d="M2 6 C14 20 22 30 22 42 C22 56 12 64 0 64 C-12 64 -22 56 -22 42 C-22 30 -10 20 2 6 Z"/> </g> <path fill="#FFD23F" stroke="#0E2C4E" stroke-width="6" stroke-linejoin="round" d="M274 124 L214 248 L254 248 L238 344 L304 208 L262 208 Z"/> <g transform="translate(366 226) scale(1.08)"> <path fill="url(#fk-damla)" d="M0 -66 C22 -36 48 -8 48 22 C48 50 26 68 0 68 C-26 68 -48 50 -48 22 C-48 -8 -22 -36 0 -66 Z"/> <path fill="#FFFFFF" fill-opacity=".55" d="M-22 20 C-22 6 -16 -6 -8 -16 C-10 -2 -10 12 -4 26 Z"/> </g> <rect x="146" y="374" width="220" height="16" rx="8" fill="#FFFFFF"/> <rect x="146" y="374" width="150" height="16" rx="8" fill="#4CD08A"/> </svg> Fatura Kalkanı</h1>
       <p>Doğalgaz, elektrik ve su limitlerini haftalara böler, havaya göre plan yapar.</p>
     </div>
     <div class="ilsel">
@@ -791,7 +795,7 @@ function renderReminders(){
   $("remDay").textContent=GUNLER[S.hg];
   const nextRead=weekStart(TODAY)+7;const prev=nextRead-1;
   const wd=["SU","MO","TU","WE","TH","FR","SA"][(S.hg+6)%7];
-  $("calLink").href=calUrl("Yarın sayaç günü: doğalgaz, elektrik, su",prev>=TODAY?prev:prev+7,"Limit Pusulası: yarın sayaçların fotoğrafını çek ve uygulamaya yükle.","FREQ=WEEKLY;BYDAY="+wd);
+  $("calLink").href=calUrl("Yarın sayaç günü: doğalgaz, elektrik, su",prev>=TODAY?prev:prev+7,"Fatura Kalkanı: yarın sayaçların fotoğrafını çek ve uygulamaya yükle.","FREQ=WEEKLY;BYDAY="+wd);
   const L=[["gas","Doğalgaz"],["elec","Elektrik"],["water","Su"]].map(([k,n])=>{const bp=billPeriod(TODAY,S[k].day);const d=S[k].day;
     const before=d>1?d-1:28;
     return `<a target="_blank" rel="noopener" href="${calUrl("Yarın "+n.toLowerCase()+" fatura okuması",bp.end-1>=TODAY?bp.end-1:bp.end+27,"Bugün kalan limit payını değerlendir ya da yoğun işleri yarına bırak.","FREQ=MONTHLY;BYMONTHDAY="+before)}"><button type="button">${n} (her ayın ${before}'i)</button></a>`});
@@ -997,9 +1001,9 @@ $("billForm").onsubmit=e=>{e.preventDefault();dropDemo();const n=id=>{const v=pa
 $("exportCsv").onclick=async()=>{const rows=["tur,tarih,endeks"].concat(S.readings.map(r=>`${r.t},${r.d},${r.v}`));
   rows.push("","tur,ilk,son,tuketim,tutar,kademe");S.bills.forEach(b=>rows.push(`${b.t},${b.bas},${b.bit},${b.tk??""},${b.tl??""},${b.kad??""}`));
   const dl=await window.claude?.use?.("downloads").catch(()=>null);
-  if(!dl){const data=rows.join("\n");if(window.LPAndroid){window.LPAndroid.share("limit-pusulasi.csv",data);$("setStatus").textContent="Paylaşım açıldı.";return}
-    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+data],{type:"text/csv"}));a.download="limit-pusulasi.csv";document.body.appendChild(a);a.click();a.remove();$("setStatus").textContent="İndirildi.";return}
-  try{await dl.save({filename:"limit-pusulasi.csv",data:rows.join("\n")});$("setStatus").textContent="İndirildi."}catch(e){$("setStatus").textContent=e.code==="declined"?"İndirme iptal edildi.":"İndirilemedi."}};
+  if(!dl){const data=rows.join("\n");if(window.LPAndroid){window.LPAndroid.share("fatura-kalkani.csv",data);$("setStatus").textContent="Paylaşım açıldı.";return}
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+data],{type:"text/csv"}));a.download="fatura-kalkani.csv";document.body.appendChild(a);a.click();a.remove();$("setStatus").textContent="İndirildi.";return}
+  try{await dl.save({filename:"fatura-kalkani.csv",data:rows.join("\n")});$("setStatus").textContent="İndirildi."}catch(e){$("setStatus").textContent=e.code==="declined"?"İndirme iptal edildi.":"İndirilemedi."}};
 
 // ---------- CLAUDE İLE OKUMA ----------
 let sample=null;
