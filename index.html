@@ -246,6 +246,15 @@ nav.bottom,.sheet,#sumCards{display:none}
 
   <!-- CİHAZLAR -->
   <section data-view="cihaz" hidden>
+    <div class="card" style="border-top:4px solid var(--elec);margin-bottom:14px">
+      <h2>Elektrik tavsiyeleri</h2>
+      <p class="small muted" style="margin:4px 0 10px">Hangi tarife sana uygun, hangi cihazı değiştirirsen fatura ne kadar düşer. Hesap senin cihaz listen ve faturalarınla yapılır.</p>
+      <h3 style="margin:8px 0 4px">Tarife</h3><p class="small" id="tvTarife" style="margin:0"></p>
+      <h3 style="margin:14px 0 4px">Cihazı değiştirirsen</h3>
+      <div class="scroll"><table id="tvTablo"></table></div>
+      <p class="small" id="tvOzet" style="margin:10px 0 0"></p>
+      <h3 style="margin:14px 0 4px">Kullanımı değiştirirsen</h3><div class="small" id="tvKullanim" style="display:grid;gap:6px"></div>
+    </div>
     <div class="section-h" style="margin-top:0"><h2>Bir kez kullanınca faturaya ne ekler?</h2><span class="small muted" id="cihazFiyat"></span></div>
     <div class="grid3" id="useCards"></div>
     <div class="section-h"><h2>Evdeki cihazlar</h2></div>
@@ -916,12 +925,14 @@ function renderRapor(ctx){RAPOR_CTX=ctx;const {GS,EI,WI}=ctx;const sat=[];
   $("rapor").innerHTML=sat.map((x,i)=>`<button type="button" class="rsat" data-i="${i}"><span class="nok" style="background:var(${x.renk})"></span><span><b class="bas">${x.bas}</b><span class="oz">${x.oz}</span></span><span class="ok">›</span><span class="det">${x.det}</span></button>`).join("");
   document.querySelectorAll(".rsat").forEach(b=>b.onclick=()=>b.classList.toggle("acik"))}
 
-const ORNEK_SORU=["Bu hafta elektriğim geçen haftaya göre nasıl?","Yıllık elektrik limitini geçecek miyim?","Aralıkta doğalgazda sıkıntı yaşar mıyım?","Bu ay faturalarım ne kadar gelir?","Hangi elektrik tarifesi bana uygun?","Su durumum nasıl?"];
+const ORNEK_SORU=["Bu hafta elektriğim geçen haftaya göre nasıl?","Yıllık elektrik limitini geçecek miyim?","Aralıkta doğalgazda sıkıntı yaşar mıyım?","Bu ay faturalarım ne kadar gelir?","Hangi elektrik tarifesi bana uygun?","A++ buzdolabı alırsam fatura ne kadar düşer?","Su durumum nasıl?"];
 function cevap(q){const c=RAPOR_CTX;if(!c)return "Henüz hesap yapılmadı.";const {GS,EI,WI}=c;const t=q.toLocaleLowerCase("tr");
   const elec=/elektri|kwh|ışık|lamba/.test(t),gas=/gaz|doğal|kombi|sm3|sm³|ısın/.test(t),su=/\bsu\b|suy|m3|musluk/.test(t)&&!gas;
   const yil=/yıl|3000|3\.000|sktt|destek|son kaynak/.test(t),hafta=/hafta/.test(t),gel=/aralık|ocak|şubat|gelecek|sonraki|sıkıntı|risk|aşar|geçer|geçece|yaşar/.test(t),fat=/fatura|ne kadar|tutar|kaç tl|para/.test(t),tar=/tarife|üç zaman|gece|puant|gündüz/.test(t);
+  const cih=/cihaz|a\+|değiştir|buzdolab|çamaşır|bulaşık|kurutma|klima|tasarruf|alırsam|yenile/.test(t);
   const out=[];
   if(tar)out.push(tarifeCevap());
+  if(cih){out.push(cihazCevap());if(!gas&&!su&&!yil&&!hafta&&!gel)return out.join("<br><br>")}
   if(!tar&&(elec||(!gas&&!su&&(yil||hafta)))){const W=elecWeeks();
     if(hafta||(!yil&&!fat&&!gel)){if(W.bu==null)out.push("Bu hafta için elektrik sayaç okuması yok. Sayaç sekmesinden bugünkü endeksi gir, geçen haftayla karşılaştırayım.");
       else{const hiz=W.gunBu?W.bu/W.gunBu*7:W.bu;let s=`Bu hafta ${W.gunBu} günde <b>${f0(W.bu)} kWh</b> kullandın (bu hızla haftayı ≈ ${f0(hiz)} kWh ile kapatırsın, sınır ${f0(W.lim)}).`;
@@ -1028,6 +1039,42 @@ function calcC(c){const T=CIHAZ.find(x=>x.k===c.k);if(!T)return null;const m=T.e
   else{use=w/1000*dk/60*T.duty;month=use*hafta*52/12}
   const suM3=T.su?T.su*hafta*52/12/1000:0;
   return {T,m,use,month,suM3,hafta,gun,dk,w}}
+// ---------- ELEKTRİK TAVSİYELERİ ----------
+// Hedef sınıf: eski etikette A++, yeni etikette (2021 sonrası) bir üst sınıf. Aylık kWh farkı MULT çarpanlarından.
+function hedefVars(sinif){if(!sinif||sinif.startsWith("e-"))return "e-A++";const yeni=["y-A","y-B","y-C","y-D","y-E","y-F","y-G"];const i=yeni.indexOf(sinif);return yeni[Math.max(0,i-1)]}
+function degisimler(p){return S.cihazlar.map(c=>{const T=CIHAZ.find(x=>x.k===c.k);if(!T||!T.etiket)return null;const r=calcC(c);if(!r||!r.month)return null;
+  const hedef=c.hedef||hedefVars(c.sinif||"e-A+");const r2=calcC({...c,sinif:hedef,yil:undefined,kwh:undefined});
+  const fark=r.month-r2.month;return {c,T,r,hedef,ayKwh:fark,ayTl:fark*p,geriAy:c.fiyat>0&&fark>0?c.fiyat/(fark*p):null}}).filter(Boolean).sort((a,b)=>b.ayKwh-a.ayKwh)}
+function renderTavsiye(p){const D=degisimler(p);const EIc=elecInfo();
+  $("tvTarife").innerHTML=tarifeCevap();
+  let h=`<tr><th>Cihaz</th><th>Şu an</th><th>Yerine</th><th>Ayda düşüş</th><th>Yeni cihaz fiyatı</th><th>Kendini öder</th></tr>`;
+  D.forEach(d=>{const ad=(SINIF.find(x=>x[0]===(d.c.sinif||"e-A+"))||["","?"])[1];
+    h+=`<tr><td>${d.T.ad}</td><td data-l="Şu an">${ad}<small class="muted" style="display:block">${f0(d.r.month)} kWh/ay</small></td>
+    <td data-l="Yerine"><select data-tv="${d.c.id}" data-f="hedef">${SINIF.map(([v,t])=>`<option value="${v}" ${d.hedef===v?"selected":""}>${t}</option>`).join("")}</select></td>
+    <td class="num" data-l="Ayda düşüş">${d.ayKwh>0?`<b>${f1(d.ayKwh)} kWh</b><small style="display:block">${tl(d.ayTl)} · yılda ${tl(d.ayTl*12)}</small>`:`<span class="muted">${d.ayKwh<0?"daha çok harcar":"fark yok"}</span>`}</td>
+    <td data-l="Fiyat"><input type="number" min="0" step="500" placeholder="TL" data-tv="${d.c.id}" data-f="fiyat" value="${d.c.fiyat??""}"></td>
+    <td data-l="Kendini öder">${d.geriAy!=null?(d.geriAy<=120?`<b>${f0(d.geriAy)} ay</b>${d.geriAy>60?' <small class="muted">(uzun)</small>':""}`:'<span class="muted">10 yıldan uzun</span>'):'<span class="muted small">fiyat gir</span>'}</td></tr>`});
+  $("tvTablo").innerHTML=D.length?h:`<tr><td class="muted">Cihazlarım listesine etiketli cihaz (buzdolabı, çamaşır, bulaşık, kurutma, TV, klima…) ekle.</td></tr>`;
+  $("tvTablo").querySelectorAll("[data-tv]").forEach(el=>el.onchange=()=>{const c=S.cihazlar.find(x=>x.id===el.dataset.tv);if(!c)return;
+    if(el.dataset.f==="hedef")c.hedef=el.value;else{const v=parseFloat(el.value);c.fiyat=isFinite(v)?v:undefined}save();render()});
+  const top=D.filter(d=>d.ayKwh>0);const kwh=top.reduce((a,d)=>a+d.ayKwh,0);
+  if(top.length){const ayNow=EIc.r!=null?EIc.rd*30.4:null;let t=`Listedeki ${top.length} cihazın hepsini değiştirirsen ayda <b>${f0(kwh)} kWh</b>, yılda <b>${f0(kwh*12)} kWh</b> daha az harcarsın.`;
+    if(ayNow){const once=eCost(ayNow,30.4),sonra=eCost(Math.max(0,ayNow-kwh),30.4);t+=` Aylık faturan ≈ <b>${tl(once)} → ${tl(sonra)}</b> olur (${tl(once-sonra)} daha az).`}
+    else t+=` Bu, ayda yaklaşık ${tl(kwh*p)} demek.`;
+    if(EIc.projYear!=null&&EIc.projYear>EIc.lim*0.9)t+=` Yıllık ${f0(EIc.lim)} kWh destek sınırına yakınsın; bu tasarruf seni sınırın altında tutmaya da yardım eder.`;
+    t+=` En çok kazandıran: <b>${top[0].T.ad}</b> (ayda ${tl(top[0].ayTl)}).`;if(top.some(d=>d.geriAy!=null&&d.geriAy>60))t+=` <b>Not:</b> Çalışan bir cihazı yalnız fatura için değiştirmek çoğu zaman kendini 5 yılda ödemez. Cihaz bozulduğunda ya da zaten yenilenecekse en verimli sınıfı seç; fark yıllarca cebinde kalır.`;$("tvOzet").innerHTML=t}
+  else $("tvOzet").innerHTML="";
+  const k=[];const has=x=>S.cihazlar.find(c=>c.k===x);const r=x=>{const c=has(x);return c?calcC(c):null};
+  if(has("isitici")&&r("isitici").month>0)k.push(`Elektrikli ısıtıcı ayda ${f0(r("isitici").month)} kWh (${tl(r("isitici").month*p)}). Günde 1 saat az çalıştırmak ayda ${tl(2*30.4*p)} kazandırır. Gaz limitin genişse kombiyle ısınmak daha ucuz.`);
+  if(has("kurutma")&&r("kurutma").use)k.push(`Kurutma makinesi bir çevrimde ${f1(r("kurutma").use)} kWh (${tl(r("kurutma").use*p)}). Haftada bir çevrimi askıya çevirmek ayda ${tl(r("kurutma").use*4.3*p)} kazandırır.`);
+  if(has("camasir"))k.push(`Çamaşırı 40 °C yerine 30 °C'de yıkamak her yıkamada yaklaşık %35 elektrik tasarrufu sağlar; ayda ≈ ${tl(r("camasir").month*0.35*p)}.`);
+  if(has("buzdolabi"))k.push("Buzdolabının kapı lastiği eskiyse ve arkası duvara yapışıksa %10–15 fazla çeker; arkasında 10 cm boşluk bırak.");
+  k.push(`Bekleme modundaki cihazlar (TV, modem, şarj) evin elektriğinin yaklaşık %5–10'unu yer. Gece fişten çekmek ayda ≈ ${tl((EIc.r!=null?EIc.rd*30.4:250)*0.05*p)} kazandırır.`);
+  if(EIc.r!=null&&EIc.rd>S.elec.kad)k.push(`Haftada ${f0(EIc.rd*7)} kWh harcıyorsun; 56 kWh'i aşan her kWh %${f0((S.elec.py/S.elec.pd-1)*100)} pahalı. Haftada ${f0(EIc.rd*7-56)} kWh azaltırsan hepsi 1. kademede kalır.`);
+  $("tvKullanim").innerHTML=k.map(x=>`<div>• ${x}</div>`).join("")}
+function cihazCevap(){const p=elecInfo().marg;const D=degisimler(p).filter(d=>d.ayKwh>0);
+  if(!D.length)return "Cihazlarım listesine etiketli cihazlarını (buzdolabı, çamaşır makinesi…) enerji sınıflarıyla ekle; hangisini değiştirirsen ne kadar düşeceğini hesaplayayım.";
+  return "Cihaz değiştirirsen:<br>"+D.slice(0,4).map(d=>`• <b>${d.T.ad}</b> → ${(SINIF.find(x=>x[0]===d.hedef)||["",""])[1]}: ayda ${f1(d.ayKwh)} kWh, <b>${tl(d.ayTl)}</b> (yılda ${tl(d.ayTl*12)})${d.geriAy?(d.geriAy>120?", kendini 10 yıldan uzun sürede öder":`, kendini ${f0(d.geriAy)} ayda öder`):""}`).join("<br>")+"<br>Ayrıntı ve hedef sınıf seçimi: Cihazlarım › Elektrik tavsiyeleri."}
 function renderCihaz(){
   const EIc=elecInfo();const p=EIc.marg;$("cihazFiyat").textContent="Elektrik "+f1(p)+" TL/kWh ile ("+(EIc.sktOn?"SKTT":EIc.rd>S.elec.kad?"haftada "+f0(S.elec.kad*7)+" kWh'i geçtiğin için 2. kademe":"düşük kademe")+", vergiler dahil)";
   const rows=S.cihazlar.map(c=>({c,r:calcC(c)})).filter(x=>x.r);
@@ -1049,7 +1096,7 @@ function renderCihaz(){
     else use=`haftada <input type="number" min="0" data-cid="${c.id}" data-f="hafta" value="${r.hafta}"> × <input type="number" min="0" data-cid="${c.id}" data-f="dk" value="${r.dk}"> dk`;
     const one=r.use!=null?`${f1(r.use)} kWh<small class="muted" style="display:block">${(r.use*p).toLocaleString("tr-TR",{maximumFractionDigits:2})} TL</small>`:`${f1(r.month/30.4)} kWh/gün`;
     h+=`<tr><td>${T.ad}${c.yil||c.kwh?` <span class="chip ok">etiketten</span>`:""}</td><td data-l="Enerji sınıfı">${sel}</td><td data-l="Güç W">${wIn}</td><td data-l="Kullanım" class="wide">${use}</td><td class="num" data-l="Bir kullanım">${one}</td><td class="num" data-l="Aylık kWh">${f1(r.month)}</td><td class="num" data-l="Aylık TL">${tl(r.month*p)}</td><td class="num" data-l="Faturadaki payı">%${total?Math.round(r.month/total*100):0}</td><td><button type="button" data-cdel="${c.id}">Sil</button></td></tr>`});
-  $("cihazTable").innerHTML=h;
+  $("cihazTable").innerHTML=h;renderTavsiye(p);
   $("cihazTable").querySelectorAll("[data-cid]").forEach(el=>el.onchange=()=>{const c=S.cihazlar.find(x=>x.id===el.dataset.cid);if(!c)return;const f=el.dataset.f;
     if(f==="sinif"){c.sinif=el.value;delete c.yil;delete c.kwh}else{const v=parseFloat(el.value);c[f]=isFinite(v)?v:undefined}save();render()});
   $("cihazTable").querySelectorAll("[data-cdel]").forEach(b=>b.onclick=()=>{S.cihazlar=S.cihazlar.filter(x=>x.id!==b.dataset.cdel);save();render()});
