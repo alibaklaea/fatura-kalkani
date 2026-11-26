@@ -64,6 +64,18 @@ nav.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line
 nav.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:10px 12px;color:var(--muted);white-space:nowrap}
 nav.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.rapor{display:grid;gap:10px}
+.rsat{display:grid;grid-template-columns:12px 1fr auto;gap:12px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.rsat .nok{width:12px;height:12px;border-radius:50%;margin-top:5px}
+.rsat b.bas{display:block;font-size:15px}.rsat .oz{font-size:14px;color:var(--muted);margin-top:2px}
+.rsat .det{grid-column:2/4;font-size:14px;line-height:1.5;margin-top:6px;display:none}.rsat.acik .det{display:block}
+.rsat .ok{color:var(--muted);transition:transform .2s}.rsat.acik .ok{transform:rotate(90deg)}
+.sohbet{display:flex;flex-direction:column;gap:10px;min-height:46vh;max-height:62vh;overflow:auto;padding:4px 2px 10px}
+.bal{max-width:88%;padding:10px 14px;border-radius:16px;line-height:1.5;font-size:15px}
+.bal.ben{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.bal.o{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px}
+.cipler{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;margin:6px 0 10px;padding-bottom:4px}.cipler button{white-space:nowrap;flex:none}.cipler button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+.sorform{display:flex;gap:8px}.sorform input{flex:1;min-width:0}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
 .ucard{border-top:4px solid var(--c)}
 .ucard .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
@@ -181,6 +193,7 @@ nav.bottom,.sheet,#sumCards{display:none}
 
   <nav class="tabs" role="tablist">
     <button role="tab" data-tab="panel" aria-selected="true">Panel</button>
+    <button role="tab" data-tab="sor">Kalkan'a sor</button>
     <button role="tab" data-tab="cihaz">Cihazlarım</button>
     <button role="tab" data-tab="plan">16 günlük plan</button>
     <button role="tab" data-tab="fatura">Fatura yükle</button>
@@ -192,10 +205,11 @@ nav.bottom,.sheet,#sumCards{display:none}
     <button type="button" data-tab="panel" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg>Panel</button>
     <button type="button" data-tab="okuma"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>Sayaç</button>
     <button type="button" data-tab="fatura"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Fatura</button>
-    <button type="button" data-tab="cihaz"><svg viewBox="0 0 24 24"><path d="M9 3v4M15 3v4"/><rect x="6" y="7" width="12" height="7" rx="2"/><path d="M12 14v7"/></svg>Cihazlar</button>
+    <button type="button" data-tab="sor"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Sor</button>
     <button type="button" data-more="1"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Daha</button>
   </nav>
   <div class="sheet" id="sheet">
+    <button type="button" data-tab="cihaz">Cihazlarım</button>
     <button type="button" data-tab="plan">16 günlük plan ve hava</button>
     <button type="button" data-tab="ortalama">İl ortalamaları ve limit tablosu</button>
     <button type="button" data-tab="ayar">Ayarlar</button>
@@ -203,6 +217,10 @@ nav.bottom,.sheet,#sumCards{display:none}
 
   <!-- PANEL -->
   <section data-view="panel">
+    <div class="section-h" style="margin-top:0"><h2>Durum raporu</h2><span class="small muted">Satıra dokun, ayrıntısı açılsın</span></div>
+    <div class="rapor" id="rapor"></div>
+    <div class="row" style="margin:14px 0"><button type="button" id="detayBtn">Ayrıntıları göster</button><button type="button" data-git="sor" class="pri">Kalkan'a sor</button></div>
+    <div id="detay" hidden>
     <div class="card" style="margin-bottom:14px">
       <div class="section-h" style="margin:0 0 6px"><h2>Ne kadar harcayabilirsin?</h2><span class="small muted">Hak = yasal limit ile senin hedef faturandan düşük olanı</span></div>
       <div class="scroll"><table id="sumTable"></table></div>
@@ -212,6 +230,18 @@ nav.bottom,.sheet,#sumCards{display:none}
     <div class="grid3" id="cards"></div>
     <div class="section-h"><h2>Bu haftanın önerileri</h2><span class="small muted" id="wxSrc"></span></div>
     <div class="advice" id="advice"></div>
+    </div>
+  </section>
+
+  <!-- SOHBET -->
+  <section data-view="sor" hidden>
+    <div class="card">
+      <h2>Kalkan'a sor</h2>
+      <p class="small muted" style="margin:4px 0 0">Cevaplar senin sayaç okumalarından, faturalarından ve resmî limitlerden hesaplanır. İnternet gerekmez.</p>
+      <div class="cipler" id="cipler"></div>
+      <div class="sohbet" id="sohbet" aria-live="polite"></div>
+      <form class="sorform" id="sorForm"><input id="sorInput" placeholder="Örn: Bu hafta elektriğim geçen haftaya göre nasıl?" autocomplete="off"><button class="pri" type="submit">Sor</button></form>
+    </div>
   </section>
 
   <!-- CİHAZLAR -->
@@ -273,8 +303,14 @@ nav.bottom,.sheet,#sumCards{display:none}
           <label>Tüketim (Sm³ / kWh / m³)<input type="number" step="any" id="b_tk"></label>
           <label>Düzeltme katsayısı (gaz)<input type="number" step="any" id="b_kat"></label>
           <label>Fatura tutarı TL<input type="number" step="any" id="b_tl"></label>
-          <label>Kademe (gaz)<select id="b_kad"><option value="">—</option><option value="1">1. kademe</option><option value="2">2. kademe</option></select></label>
+          <label>Kademe (gaz)<select id="b_kad"><option value="">—</option><option value="1">1. kademe</option><option value="2">2. kademe</option><option value="k">Karışık (bir kısmı 1., bir kısmı 2.)</option></select></label>
+          <label class="kmix" hidden>1. kademe gün sayısı<input type="number" min="0" id="b_g1"></label>
+          <label class="kmix" hidden>2. kademe gün sayısı<input type="number" min="0" id="b_g2"></label>
+          <p class="small muted kmix" hidden style="grid-column:1/-1;margin:0">Faturada "Gün sayısı" sütununda iki ayrı fiyat varsa (ör. 25 gün 1,366, 5 gün 2,053) karışık seç. Bu, dönemin iki aya yayıldığını ve bir ayın payının limiti aştığını gösterir.</p>
           <label>Yılbaşından beri kWh (elektrik)<input type="number" step="any" id="b_ytd"></label>
+          <label>Gündüz kWh (elektrik, 06–17)<input type="number" step="any" id="b_gz"></label>
+          <label>Puant kWh (elektrik, 17–22)<input type="number" step="any" id="b_pt"></label>
+          <label>Gece kWh (elektrik, 22–06)<input type="number" step="any" id="b_gc"></label>
           <div class="row" style="grid-column:1/-1"><button class="pri" type="submit">Faturayı kaydet</button><span class="status" id="billSaved"></span></div>
         </form>
       </div>
@@ -415,7 +451,7 @@ const tl=x=>(x==null||!isFinite(x))?"—":Math.round(x).toLocaleString("tr-TR")+
 // ---------- DURUM ----------
 function defaultState(){return{
   v:1, demo:false, il:"Ankara", hg:1, pay:3,
-  gas:{day:20,kat:0.92,k1:17.88,k2:26.73,ver:90},
+  gas:{day:20,kat:0.92,k1:17.44,k2:26.21,ver:90},
   elec:{day:15,p:3.58,pd:2.918965,py:4.320708,kad:8,vf:1.1177,sktt:6.97,isi:2,kur:2.5,ytd:null,ytdt:null},
   water:{day:10,pre:"",t1:10,p1:30,t2:20,p2:45,p3:70,yon:"asan",cam:50},
   readings:[], bills:[], wx:{}, savedAt:0,
@@ -526,6 +562,22 @@ function gasSegInfo(seg){
   const ratio=lim?target/lim:1;
   const remain=usedSm3!=null?target-usedSm3-(trackStart>seg.start?untracked*ratio:0):target;
   return {seg,lim,target,usedSm3,upto,trackStart,proj,remain,futW,r}}
+// Faturadaki gerçek hesap (BOTAŞ KFU Esasları md. 9, dağıtım şirketi fatura örneği):
+// okuma dönemi tüketimi gün sayısına EŞİT bölünür; her ayın payı = dönem günlük ortalaması × o aydaki gün,
+// limit = ayın günlük limiti × o aydaki gün. Pay limiti aşarsa O AYIN PAYININ TAMAMI 2. kademe.
+// Projeksiyon iklim profiliyle (BOTAŞ limitleri = 5 yıllık ay ortalaması×1,75): geçmiş ve gelecek aynı ölçekte, canlı hava karışmaz.
+function wGasI(n){return climate(S.il).per[ymd(n).m-1]}
+function gasRateI(){const lr=lastRead("gas"),fr=firstRead("gas");if(!lr||!fr||lr.n===fr.n)return null;
+  const a=Math.max(fr.n,lr.n-31);const u=used("gas",a,lr.n);if(u==null)return null;const w=sum(a,lr.n,wGasI);return w>0?u*S.gas.kat/w:null}
+function gasBillSplit(){const bp=billPeriod(TODAY,S.gas.day);const days=bp.end-bp.start;const r=gasRateI();const lr=lastRead("gas");const parts=[];
+  for(let n=bp.start;n<bp.end;){const seg=gasSeg(n);const gun=seg.end-seg.start;const lim=sum(seg.start,seg.end,gasDailyLimit);parts.push({seg,gun,lim,limGun:lim/gun,m:ymd(seg.start).m});n=seg.end}
+  let tot=null;
+  if(r!=null&&lr){if(E("gas",bp.start)!=null&&lr.n>bp.start){const up=Math.min(lr.n,bp.end);tot=used("gas",bp.start,up)*S.gas.kat+r*sum(up,bp.end,wGasI)}
+    else tot=r*sum(bp.start,bp.end,wGasI)}
+  if(tot==null)return {bp,days,parts,avg:null};
+  const avg=tot/days;let tlT=0,tl1=0;
+  parts.forEach(p=>{p.pay=avg*p.gun;p.k2=avg>p.limGun+1e-9;p.tl=p.pay*(p.k2?S.gas.k2:S.gas.k1);tlT+=p.tl;tl1+=p.pay*S.gas.k1});
+  return {bp,days,parts,avg,tot,tl:tlT,fazla:tlT-tl1,esik:Math.min(...parts.map(p=>p.limGun))}}
 function gasAllowance(n){// n günü için planlanan hak (bugünkü bilgiye göre)
   const seg=gasSeg(n);const I=gasSegInfo(seg);
   const from=Math.max(TODAY, I.upto!=null?I.upto:seg.start, seg.start);
@@ -560,7 +612,26 @@ const EPROF=[1.15,1.08,1.0,0.92,0.88,0.95,1.1,1.12,0.95,0.92,1.02,1.13];
 const wE=n=>EPROF[ymd(n).m-1];
 function elecRate(){const lr=lastRead("elec"),fr=firstRead("elec");if(!lr||!fr||lr.n===fr.n)return null;const a=Math.max(fr.n,lr.n-14);const u=used("elec",a,lr.n);return u==null?null:u/(lr.n-a)}
 // Mesken günlük kademe: okuma gün sayısı × 8 kWh düşük kademe, kalanı yüksek kademe (faturadaki iki satır)
-function eCost(kwh,days){if(kwh==null)return null;const E=S.elec;const kd=E.kad*days;return (Math.min(kwh,kd)*E.pd+Math.max(0,kwh-kd)*E.py)*E.vf}
+const DAG=2.4249; // dağıtım bedeli TL/kWh (EPDK, 4 Nisan 2026); enerji payı = birim fiyat − dağıtım
+const vergili=(net,enerji)=>(net+0.05*enerji)*1.10; // BTV %5 yalnız enerji bedeline, sonra KDV %10 (mesken)
+function eCost(kwh,days){if(kwh==null)return null;const E=S.elec;const kd=E.kad*days;const a=Math.min(kwh,kd),b=Math.max(0,kwh-kd);
+  return vergili(a*E.pd+b*E.py,a*Math.max(0,E.pd-DAG)+b*Math.max(0,E.py-DAG))}
+// Üç zamanlı (kademe yok): gündüz 06–17, puant 17–22, gece 22–06; birim fiyatlar yaklaşık (dağıtım dahil, vergisiz)
+const UC={g:4.3755,p:6.1725,n:2.9386};
+function ucCost(G,P,N){const net=G*UC.g+P*UC.p+N*UC.n;return vergili(net,G*(UC.g-DAG)+P*(UC.p-DAG)+N*(UC.n-DAG))}
+function tarifeOner(eb){const aylar=[...new Set(eb.map(b=>b.bit.slice(0,7)))];
+  const kul=eb.filter(b=>b.tk>0);let tek=0,uc=0,ucVar=true,gTop=0,pTop=0,nTop=0,eTop=0,gunTop=0;
+  kul.forEach(b=>{const gun=Math.round((dn(b.bit)-dn(b.bas)));tek+=eCost(b.tk,gun);eTop+=b.tk;gunTop+=gun;
+    if(b.gz!=null&&b.pt!=null&&b.gc!=null){uc+=ucCost(b.gz,b.pt,b.gc);gTop+=b.gz;pTop+=b.pt;nTop+=b.gc}else ucVar=false});
+  const ort=eTop/gunTop;
+  let t=`${aylar.length} aylık faturana baktım: günde ortalama <b>${f1(ort)} kWh</b>, tek zamanlı tarifede bu faturalar ≈ <b>${tl(tek)}</b> tutuyor.`;
+  if(ucVar&&gTop+pTop+nTop>0){const nPay=nTop/(gTop+pTop+nTop)*100,pPay=pTop/(gTop+pTop+nTop)*100;
+    t+=` Tüketimin %${f0(100-nPay-pPay)} gündüz, %${f0(pPay)} puant (17–22), %${f0(nPay)} gece (22–06). Üç zamanlı tarifede aynı tüketim ≈ <b>${tl(uc)}</b> olurdu.`;
+    t+=uc<tek*0.98?` <b>Üç zamanlı tarife sana daha uygun</b>, dönem başına ≈ ${tl((tek-uc)/kul.length)} kazanırsın. Akıllı sayacın varsa geçiş ücretsiz; tedarik şirketini ara (Enerjisa 444 4 372), sonraki fatura döneminde başlar.`:` <b>Tek zamanlı tarifede kal.</b> Üç zamanlı ${tl(uc-tek)} daha pahalı olurdu; gece fiyatı (2,94 TL) bile tek zamanlının düşük kademesinden (2,92 TL) pahalı.`}
+  else t+=" Faturalarında gündüz/puant/gece kWh girilmemiş. Onları da girersen üç zamanlı tarifeyle kuruşu kuruşuna karşılaştırırım.";
+  t+=ort<=8?" Günde 8 kWh'in altındasın; bu durumda üç zamanlı hiçbir dağılımda ucuz değil.":` Genel kural: üç zamanlı ancak tüketimin büyük kısmını (çoğu evde %65–70'ten fazlasını) gece 22–06 arasına kaydırabilirsen kazandırır.`;
+  t+=" Tarife türü yıllık 3.000 kWh destek sınırını değiştirmez. İkili anlaşma (indirimli tedarikçi) sınırın altında az kazandırır; asıl SKTT'ye düşersen işe yarar.";
+  return t}
 function eKwhForTl(t,days){let a=0,b=1e5;for(let i=0;i<50;i++){const m=(a+b)/2;if(eCost(m,days)>t)b=m;else a=m}return a}
 function elecInfo(){
   const o=ymd(TODAY);const y=o.y;const limNom=ELEC_LIMIT[y]||3000;const lim=Math.min(limNom,ELEC_LIMIT[y+1]||Infinity);const yEnd=mk(y+1,1,1);
@@ -626,17 +697,16 @@ function renderCards(){
   const G=gasSegInfo(gasSeg(TODAY));const GW=gasWeek();
   const gProjP=G.proj!=null?G.proj/G.lim:null;
   const bp=billPeriod(TODAY,S.gas.day);
-  // fatura tahmini: dönemi oluşturan iki dilim
-  let gBill=0,gBillOk=true,gBillParts=[];
-  for(let n=bp.start;n<bp.end;){const seg=gasSeg(n);const I=gasSegInfo(seg);
-    const v=I.proj!=null?I.proj:(I.usedSm3!=null&&I.upto>=seg.end?I.usedSm3:null);
-    if(v==null){gBillOk=false;}else{const over=v>I.lim;gBill+=v*(over?S.gas.k2:S.gas.k1);gBillParts.push({seg,v,lim:I.lim,over})}
-    n=seg.end}
+  // fatura tahmini: faturanın kendi yöntemiyle (gün sayısına eşit bölme)
+  const GS=gasBillSplit();const gBillOk=GS.avg!=null;const gBill=gBillOk?GS.tl:0;
+  const gBillParts=gBillOk?GS.parts.map(p=>({seg:p.seg,v:p.pay,lim:p.lim,over:p.k2})):[];
+  const bolHtml=gBillOk&&GS.parts.length?`<div class="sub small" style="margin-top:8px"><b>Faturada nasıl hesaplanacak:</b> dönem ortalaman günde <b class="num">${f1(GS.avg)} Sm³</b>, her aya gün sayısı kadar eşit bölünür.${GS.parts.map(p=>`<br>${AYLAR[p.m-1]} payı (${p.gun} gün): <b class="num">${f1(p.pay)}</b> / limit ${f1(p.lim)} Sm³ → <b style="color:var(${p.k2?"--bad":"--ok"})">${p.k2?"2. kademe":"1. kademe"}</b>`).join("")}</div>`:"";
   const segTxt=fmtDs(G.seg.start)+" – "+fmtDs(G.seg.end-1);
   const gasCard=`<div class="card ucard" style="--c:var(--gas)"><div class="hd"><h2>Doğalgaz</h2>${status(gProjP)}</div>
     ${meter("Bu hafta",GW.used,GW.plan,"Sm³",resetTxt(GW.we),GW.expected)}
     ${meter("Bu limit dilimi",G.usedSm3,G.lim,"Sm³",segTxt+" · "+resetTxt(G.seg.end),null)}
     <div class="sub small muted">Dilim sonu tahmini: <b class="num">${f1(G.proj)} Sm³</b> · ${S.il} ${AYLAR[ymd(TODAY).m-1]} limiti ${f1(LIM[S.il][ymd(TODAY).m-1])} Sm³</div>
+    ${bolHtml}
     <div class="cost"><span>Bu dönem fatura tahmini<br><span class="small muted">${fmtDs(bp.start)} – ${fmtDs(bp.end)}</span></span><span class="num">${gBillOk?tl(gBill):"—"}</span></div></div>`;
   const EI=elecInfo();
   const eP=EI.projYear!=null?EI.projYear/EI.lim:null;
@@ -655,11 +725,13 @@ function renderCards(){
     <div class="sub small muted">Dönem sonu tahmini: <b class="num">${f1(WI.proj)} m³</b> · 2. kademe ${f1(S.water.t1)}–${f1(S.water.t2)} m³</div>
     <div class="cost"><span>Bu dönem fatura tahmini</span><span class="num">${tl(waterCost(WI.proj))}</span></div></div>`;
   $("cards").innerHTML=gasCard+elecCard+waterCard;
-  return {G,GW,EI,WI,gBillParts}}
+  return {G,GW,EI,WI,gBillParts,GS}}
 
 function adv(color,title,text){return `<div class="adv" style="--c:var(${color})"><span class="stripe"></span><div><h3>${title}</h3><p>${text}</p></div></div>`}
 function renderAdvice(ctx){
-  const {G,GW,EI,WI}=ctx;const out=[];
+  const {G,GW,EI,WI,GS}=ctx;const out=[];
+  if(GS&&GS.avg!=null&&GS.parts.length>1&&GS.parts.some(p=>p.k2)){const k2=GS.parts.filter(p=>p.k2);const ad=k2.map(p=>AYLAR[p.m-1]+" ("+p.gun+" gün)").join(", ");
+    out.push(adv("--bad","Doğalgaz: fatura dönemi iki aya bölünüyor",`Fatura, dönem tüketimini günlere <b>eşit</b> böler (BOTAŞ kuralı). Bu dönem günde ortalama <b>${f1(GS.avg)} Sm³</b> gidiyorsun. ${ad} payının limiti günde ${k2.map(p=>f1(p.limGun)).join(" / ")} Sm³ olduğu için o günler <b>2. kademeden</b> hesaplanır, fazladan yaklaşık <b>${tl(GS.fazla)}</b>. Gerçekte o günlerde az yakmış olsan da fark etmez; fatura ortalamaya bakar. Dönemin tamamında günde <b>${f1(GS.esik)} Sm³</b> altına inersen hepsi 1. kademede kalır.`))}
   const heatKwhPerSm3=KWH_PER_SM3*(S.gas.ver/100);
   // 1) Gaz dilim projeksiyonu
   if(G.proj!=null){
@@ -808,9 +880,78 @@ function fillSettings(){const g=S.gas,e=S.elec,w=S.water;
   set("s_eday",e.day);set("s_epd",e.pd);set("s_epy",e.py);set("s_ekad",e.kad);set("s_evf",e.vf);set("s_esk",e.sktt);set("s_eisi",e.isi);set("s_ekur",e.kur);set("s_eytd",e.ytd);set("s_eytdt",e.ytdt);
   set("s_wday",w.day);set("s_wpre",w.pre);set("s_w1",w.t1);set("s_w1p",w.p1);set("s_w2",w.t2);set("s_w2p",w.p2);set("s_w3p",w.p3);set("s_wyon",w.yon);set("s_wcam",w.cam);if(typeof suNot==="function")suNot()}
 
+// ---------- DURUM RAPORU + KALKAN'A SOR ----------
+// Sonraki gaz faturası: eşik = dönemdeki ayların en düşük günlük limiti; beklenen ortalama = bugünkü ortalama × iklim oranı (BOTAŞ limitleri 5 yıllık tüketimden geldiği için iklim vekili)
+function gasNext(GS){const bp2=billPeriod(GS.bp.end,S.gas.day);const parts=[];for(let n=bp2.start;n<bp2.end;){const seg=gasSeg(n);const e=Math.min(seg.end,bp2.end);const st=Math.max(seg.start,n);parts.push({m:ymd(st).m,gun:e-st,limGun:gasDailyLimit(st)});n=e}
+  const days=bp2.end-bp2.start;const lg=p=>p.reduce((a,x)=>a+x.limGun*x.gun,0);
+  const curL=GS.parts.reduce((a,x)=>a+x.limGun*x.gun,0)/GS.days, nxtL=lg(parts)/days;
+  const beklenen=GS.avg!=null?GS.avg*nxtL/curL:null;const esik=Math.min(...parts.map(p=>p.limGun));const dar=parts.find(p=>p.limGun===esik);
+  return {bp:bp2,days,parts,beklenen,esik,dar,pay:beklenen!=null?(esik-beklenen)/esik:null}}
+function elecWeeks(){const ws=weekStart(TODAY);const bu=used("elec",ws,ws+7),gecen=used("elec",ws-7,ws);const lr=lastRead("elec");
+  const gunBu=lr?Math.max(0,Math.min(7,lr.n-ws)):0;return {ws,bu,gecen,gunBu,lim:S.elec.kad*7}}
+let RAPOR_CTX=null;
+function renderRapor(ctx){RAPOR_CTX=ctx;const {GS,EI,WI}=ctx;const sat=[];
+  // gaz
+  if(GS&&GS.avg!=null){const k2=GS.parts.filter(p=>p.k2);const N=gasNext(GS);
+    let renk="--ok",oz,det=`Fatura dönemi ${fmtDs(GS.bp.start)} – ${fmtDs(GS.bp.end-1)}. Fatura tüketimi günlere eşit böler: günde ortalama <b>${f1(GS.avg)} Sm³</b>.<br>`+GS.parts.map(p=>`${AYLAR[p.m-1]} payı (${p.gun} gün): ${f1(p.pay)} / limit ${f1(p.lim)} Sm³ → ${p.k2?"<b style='color:var(--bad)'>2. kademe</b>":"1. kademe"}`).join("<br>")+`<br>Fatura tahmini: <b>${tl(GS.tl)}</b>.`;
+    if(k2.length){renk="--bad";oz=`${k2.map(p=>AYLAR[p.m-1]+" payı ("+p.gun+" gün)").join(", ")} 2. kademeye düşüyor, fazladan ≈ ${tl(GS.fazla)}.`}
+    else{const pay=(GS.esik-GS.avg)/GS.esik;const dar=GS.parts.find(p=>p.limGun===GS.esik);const kalan=GS.esik*GS.days/S.gas.kat;const son=E("gas",GS.bp.start);
+      if(pay<0.12){renk="--warn";oz=`Sınırdasın: dönem ortalaman günde ≈ ${f1(GS.avg)} Sm³ gidiyor, eşik ${f1(GS.esik)} Sm³ (${AYLAR[dar.m-1]} payı yüzünden).`}else oz=`1. kademedesin: dönem ortalaman günde ≈ ${f1(GS.avg)} Sm³, eşik ${f1(GS.esik)} Sm³.`;
+      if(son!=null)det=`<b>Somut hedef:</b> ${fmtDs(GS.bp.end)} okumasında sayaç <b>${f0(son+kalan)}</b> m³'ü geçmesin (bugünden itibaren sayaçta günde en fazla ${f1(GS.esik/S.gas.kat)} m³).<br>`+det}
+    if(N.beklenen!=null){const r2=N.pay<0?"--bad":N.pay<0.12?"--warn":"--ok";det+=`<br><br><b>Sonraki fatura (${fmtDs(N.bp.start)} – ${fmtDs(N.bp.end-1)}):</b> ${N.parts.map(p=>AYLAR[p.m-1]+" "+p.gun+" gün, limit günde "+f1(p.limGun)).join(" · ")}. Eşik günde <b>${f1(N.esik)} Sm³</b> (${AYLAR[N.dar.m-1]} payı yüzünden). Hava soğudukça beklenen ortalama ≈ <b>${f1(N.beklenen)} Sm³/gün</b> → <b style="color:var(${r2})">${N.pay<0?"aşma riski yüksek":N.pay<0.12?"sınırda, dikkat":"güvende"}</b>. Haftada en fazla ${f0(N.esik*7)} Sm³.`;
+      if(renk==="--ok"&&r2!=="--ok")renk="--warn"}
+    sat.push({renk,bas:"Doğalgaz",oz,det})}
+  else sat.push({renk:"--muted",bas:"Doğalgaz",oz:"Veri az: bir fatura ya da iki sayaç okuması ekle.",det:"Faturayı Fatura sekmesinden ekle (PDF en doğrusu) ya da haftalık sayaç fotoğrafı/endeksi gir."});
+  // elektrik
+  {const W=elecWeeks();let renk="--ok",oz,det="";
+   if(EI.projYear!=null){const yilRisk=EI.projYear>EI.lim;renk=yilRisk?"--bad":EI.projYear>EI.lim*0.93?"--warn":"--ok";
+     oz=`Yıl sonu tahmini ${f0(EI.projYear)} / ${f0(EI.lim)} kWh. `+(W.bu!=null?`Bu hafta ${f0(W.bu)} / ${f0(W.lim)} kWh.`:"");
+     det=`<b>Yıllık:</b> şu ana kadar ${f0(EI.ytd)} kWh. ${yilRisk?`Bu gidişle ${EI.crossN?fmtD(EI.crossN):"yıl içinde"} geçersin, devlet desteği ${EI.sktN?fmtD(EI.sktN)+" "+ymd(EI.sktN).y:""} itibarıyla kalkar.`:"Sınırın altında kalıyorsun."} Kalan günlerde günde en fazla <b>${f1(EI.daily)} kWh</b>.<br><b>Haftalık:</b> ${W.bu!=null?`bu hafta ${f0(W.bu)} kWh (${W.gunBu} gün)`:"bu hafta okuma yok"}${W.gecen!=null?`, geçen hafta ${f0(W.gecen)} kWh`:""}. 56 kWh'ten sonrası ≈%${f0((S.elec.py/S.elec.pd-1)*100)} pahalı.<br>Fatura tahmini: <b>${tl(EI.bill(EI.bpProj,EI.bp.end-EI.bp.start))}</b>.`}
+   else{renk="--muted";oz="Veri az: elektrik faturası ya da iki sayaç okuması ekle.";det="Faturadaki 'yılbaşından beri kWh' satırını girersen yıllık sınır takibi başlar."}
+   if(renk==="--ok"&&W.bu!=null&&W.gunBu>0&&W.bu/W.gunBu*7>W.lim)renk="--warn";
+   sat.push({renk,bas:"Elektrik",oz,det})}
+  // su
+  if(WI.proj!=null){const r=WI.proj>S.water.t1?"--warn":"--ok";sat.push({renk:r,bas:"Su",oz:`Dönem sonu tahmini ${f1(WI.proj)} m³, 1. kademe ${f1(S.water.t1)} m³.`,det:`Haftalık hakkın ${f1(WI.weekPlan)} m³ (günde ≈ ${f0(WI.weekPlan*1000/7)} litre). Fatura tahmini ${tl(waterCost(WI.proj))}.`})}
+  else sat.push({renk:"--muted",bas:"Su",oz:"Veri az: su faturası ya da sayaç okuması ekle.",det:"Ayarlar'dan şehrini seçersen belediyenin kademeleri gelir."});
+  $("rapor").innerHTML=sat.map((x,i)=>`<button type="button" class="rsat" data-i="${i}"><span class="nok" style="background:var(${x.renk})"></span><span><b class="bas">${x.bas}</b><span class="oz">${x.oz}</span></span><span class="ok">›</span><span class="det">${x.det}</span></button>`).join("");
+  document.querySelectorAll(".rsat").forEach(b=>b.onclick=()=>b.classList.toggle("acik"))}
+
+const ORNEK_SORU=["Bu hafta elektriğim geçen haftaya göre nasıl?","Yıllık elektrik limitini geçecek miyim?","Aralıkta doğalgazda sıkıntı yaşar mıyım?","Bu ay faturalarım ne kadar gelir?","Hangi elektrik tarifesi bana uygun?","Su durumum nasıl?"];
+function cevap(q){const c=RAPOR_CTX;if(!c)return "Henüz hesap yapılmadı.";const {GS,EI,WI}=c;const t=q.toLocaleLowerCase("tr");
+  const elec=/elektri|kwh|ışık|lamba/.test(t),gas=/gaz|doğal|kombi|sm3|sm³|ısın/.test(t),su=/\bsu\b|suy|m3|musluk/.test(t)&&!gas;
+  const yil=/yıl|3000|3\.000|sktt|destek|son kaynak/.test(t),hafta=/hafta/.test(t),gel=/aralık|ocak|şubat|gelecek|sonraki|sıkıntı|risk|aşar|geçer|geçece|yaşar/.test(t),fat=/fatura|ne kadar|tutar|kaç tl|para/.test(t),tar=/tarife|üç zaman|gece|puant|gündüz/.test(t);
+  const out=[];
+  if(tar)out.push(tarifeCevap());
+  if(!tar&&(elec||(!gas&&!su&&(yil||hafta)))){const W=elecWeeks();
+    if(hafta||(!yil&&!fat&&!gel)){if(W.bu==null)out.push("Bu hafta için elektrik sayaç okuması yok. Sayaç sekmesinden bugünkü endeksi gir, geçen haftayla karşılaştırayım.");
+      else{const hiz=W.gunBu?W.bu/W.gunBu*7:W.bu;let s=`Bu hafta ${W.gunBu} günde <b>${f0(W.bu)} kWh</b> kullandın (bu hızla haftayı ≈ ${f0(hiz)} kWh ile kapatırsın, sınır ${f0(W.lim)}).`;
+        if(W.gecen!=null){const d=(hiz-W.gecen)/Math.max(1,W.gecen)*100;s+=` Geçen hafta <b>${f0(W.gecen)} kWh</b> idi: bu hafta yaklaşık %${f0(Math.abs(d))} ${d>=0?"daha fazla":"daha az"}.`}
+        s+=hiz>W.lim?` 56 kWh'i aşan kısım pahalı kademeden gelir; günde ${f1(S.elec.kad)} kWh civarına inmeye çalış.`:" 1. kademe sınırının altındasın, iyi gidiyorsun.";out.push(s)}}
+    if(yil||gel){if(EI.projYear==null)out.push("Yıllık tahmin için yılbaşından beri kWh bilgisi lazım (elektrik faturasının alt kısmında yazar). Fatura sekmesinden ekle.");
+      else out.push(`Şu ana kadar ${f0(EI.ytd)} kWh. Bu gidişle yıl sonu <b>${f0(EI.projYear)} kWh</b>, sınır ${f0(EI.lim)} kWh. ${EI.projYear>EI.lim?`<b>Evet, geçme riski var</b>: ${EI.crossN?fmtD(EI.crossN)+" civarında ":""}geçersen 3 ay sonra devlet desteği kalkar, fatura yaklaşık iki katına çıkar. Kalan günlerde günde en fazla <b>${f1(EI.daily)} kWh</b> kullanırsan geçmezsin.`:`<b>Hayır, şu gidişle geçmezsin</b>; ${f0(EI.lim-EI.projYear)} kWh payın var. Yine de Aralık'ta aydınlatma ve ısıtıcı tüketimi artar, günde ${f1(EI.daily)} kWh'i aşma.`}`)}
+    if(fat)out.push(`Bu dönem elektrik faturası tahmini <b>${tl(EI.bill(EI.bpProj,EI.bp.end-EI.bp.start))}</b>.`)}
+  if(gas){if(!GS||GS.avg==null)out.push("Doğalgaz için veri az. Son faturanı (PDF ya da elle) ya da iki sayaç okumasını gir.");
+    else{const N=gasNext(GS);const k2=GS.parts.filter(p=>p.k2);
+      out.push(`<b>Şimdiki fatura dönemi (${fmtDs(GS.bp.start)} – ${fmtDs(GS.bp.end-1)}):</b> ${k2.length?"<b>2. kademe riski var.</b> ":GS.avg>GS.esik*0.88?"<b>Sınırdasın.</b> ":"<b>Rahatsın.</b> "}Eşik günde ${f1(GS.esik)} Sm³, tahmini ortalaman ${f1(GS.avg)}.`);
+      if(!gel||hafta||fat)out.push(`Bu fatura döneminde günde ortalama <b>${f1(GS.avg)} Sm³</b> gidiyorsun. ${GS.parts.map(p=>`${AYLAR[p.m-1]} payı ${f1(p.pay)}/${f1(p.lim)} Sm³ (${p.k2?"2. kademe":"1. kademe"})`).join(", ")}. Fatura tahmini <b>${tl(GS.tl)}</b>${k2.length?`, bunun ≈ ${tl(GS.fazla)}'si 2. kademe farkı`:""}.`);
+      if(gel||!fat)out.push(`<b>Sonraki</b> fatura ${fmtDs(N.bp.start)} – ${fmtDs(N.bp.end-1)}: ${N.parts.map(p=>AYLAR[p.m-1]+" "+p.gun+" gün (günde "+f1(p.limGun)+" Sm³)").join(", ")}. Fatura ortalamaya baktığı için eşik en düşük olanı: <b>günde ${f1(N.esik)} Sm³</b>. Soğumayla beklenen ortalaman ≈ <b>${f1(N.beklenen)}</b>. ${N.pay<0?"<b>Sıkıntı çıkabilir</b>: bu dönemde aşma riski yüksek. Kombiyi 1–2 °C düşür, boş odaların peteğini kıs.":N.pay<0.12?"<b>Sınırdasın</b>: soğuk bir hafta dengeyi bozabilir.":"<b>Rahat görünüyorsun.</b>"} Haftada en fazla ≈ ${f0(N.esik*7)} Sm³.`)}}
+  if(su||(!elec&&!gas&&fat)){if(WI.proj==null)out.push("Su için veri yok. Su faturasını ya da sayaç okumasını ekle.");else out.push(`Su: dönem sonu tahmini <b>${f1(WI.proj)} m³</b>, 1. kademe ${f1(S.water.t1)} m³. Fatura tahmini ${tl(waterCost(WI.proj))}.`)}
+  if(!out.length)out.push("Bunu tam anlayamadım. Elektrik, doğalgaz ya da su hakkında; haftalık durum, yıllık limit, gelecek ay riski, fatura tahmini veya tarife sorabilirsin.");
+  return out.join("<br><br>")}
+function tarifeCevap(){const eb=S.bills.filter(b=>b.t==="elec");const aylar=new Set(eb.map(b=>b.bit.slice(0,7)));
+  if(aylar.size<3)return `Tarife tavsiyesi için <b>en az 3 aylık</b> elektrik faturası gerekiyor; şu an ${aylar.size} ay var. Faturalardaki gündüz, puant ve gece endekslerini de gir (faturada "Gündüz/Puant/Gece (Endeks)" satırları).`;
+  return typeof tarifeOner==="function"?tarifeOner(eb):"Tarife hesabı hazırlanıyor."}
+function sohbetEkle(kim,html){const d=document.createElement("div");d.className="bal "+kim;d.innerHTML=html;$("sohbet").appendChild(d);$("sohbet").scrollTop=1e9}
+function sor(q){q=(q||"").trim();if(!q)return;sohbetEkle("ben",q.replace(/</g,"&lt;"));setTimeout(()=>sohbetEkle("o",cevap(q)),250)}
+$("cipler").innerHTML=ORNEK_SORU.map(q=>`<button type="button">${q}</button>`).join("");
+document.querySelectorAll("#cipler button").forEach(b=>b.onclick=()=>sor(b.textContent));
+$("sorForm").onsubmit=e=>{e.preventDefault();sor($("sorInput").value);$("sorInput").value=""};
+$("detayBtn").onclick=()=>{const d=$("detay");d.hidden=!d.hidden;$("detayBtn").textContent=d.hidden?"Ayrıntıları göster":"Ayrıntıları gizle"};
+document.querySelectorAll("[data-git]").forEach(b=>b.onclick=()=>showTab(b.dataset.git));
+sohbetEkle("o","Merhaba, ben Fatura Kalkanı. Sayaç okumalarına ve faturalarına bakarak cevap veririm. Aşağıdaki örneklerden birini seç ya da kendi sorunu yaz.");
 function render(){
   $("bugunTxt").textContent=fmtD(TODAY)+" "+ymd(TODAY).y+", "+GUNLER[ymd(TODAY).wd];
-  renderBanners();renderSummary();const ctx=renderCards();renderAdvice(ctx);renderCihaz();renderPlan();renderAvg();renderTables();renderReminders();
+  renderBanners();renderSummary();const ctx=renderCards();renderAdvice(ctx);renderRapor(ctx);renderCihaz();renderPlan();renderAvg();renderTables();renderReminders();
 }
 
 // ---------- ÖZET: AYLIK / HAFTALIK / GÜNLÜK HAK ----------
@@ -950,7 +1091,7 @@ $("labelFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!sam
 // ---------- OLAYLAR ----------
 const ilSel=$("il");Object.keys(LIM).forEach(k=>{const o=document.createElement("option");o.value=o.textContent=k;ilSel.appendChild(o)});
 ilSel.value=S.il;ilSel.onchange=()=>{S.il=ilSel.value;save();WX={src:"none",t:{}};render();loadWeather()};
-function showTab(t){const more=["plan","ortalama","ayar"].includes(t);
+function showTab(t){const more=["plan","ortalama","ayar","cihaz"].includes(t);
   document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===t));
   document.querySelectorAll("nav.bottom button").forEach(x=>x.setAttribute("aria-selected",x.dataset.more?more:x.dataset.tab===t));
   document.querySelectorAll("[data-view]").forEach(v=>v.hidden=v.dataset.view!==t);
@@ -985,16 +1126,19 @@ function suNot(){const t=SU_TARIFE[$("s_wpre").value];$("wpreNot").textContent=t
 $("s_wpre").onchange=()=>{const t=SU_TARIFE[$("s_wpre").value];if(t){$("s_w1").value=t.t1;$("s_w1p").value=t.p1;$("s_w2").value=t.t2;$("s_w2p").value=t.p2;$("s_w3p").value=t.p3;$("s_wyon").value=t.yon}suNot()};
 $("clearDemo").onclick=()=>{const b=$("clearDemo");if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Emin misin? Tekrar bas";setTimeout(()=>{b.dataset.ok="";b.textContent="Örnek verileri sil, sıfırdan başla"},4000);return}
   const keep={il:S.il};S=mergeDefaults(keep);S.demo=false;save();fillSettings();render();b.dataset.ok="";b.textContent="Örnek verileri sil, sıfırdan başla";$("setStatus").textContent="Sıfırlandı."};
+function kmixGoster(){document.querySelectorAll(".kmix").forEach(x=>x.hidden=$("b_kad").value!=="k")}
+$("b_kad").onchange=kmixGoster;
 $("billForm").onsubmit=e=>{e.preventDefault();dropDemo();const n=id=>{const v=parseFloat($(id).value);return isFinite(v)?v:null};
   const t=$("b_tur").value,bas=$("b_bas").value,bit=$("b_bit").value;if(!bas||!bit||bit<=bas){$("billSaved").textContent="Dönem tarihlerini kontrol et.";return}
-  const b={id:uid(),t,bas,bit,e1:n("b_e1"),e2:n("b_e2"),tk:n("b_tk"),kat:n("b_kat"),tl:n("b_tl"),kad:$("b_kad").value||null,ytd:n("b_ytd")};
+  const b={id:uid(),t,bas,bit,e1:n("b_e1"),e2:n("b_e2"),tk:n("b_tk"),kat:n("b_kat"),tl:n("b_tl"),kad:$("b_kad").value||null,g1:n("b_g1"),g2:n("b_g2"),ytd:n("b_ytd"),gz:n("b_gz"),pt:n("b_pt"),gc:n("b_gc")};
   if(t==="gas"&&b.tk==null&&b.e1!=null&&b.e2!=null)b.tk=(b.e2-b.e1)*(b.kat||S.gas.kat);
   if(t!=="gas"&&b.tk==null&&b.e1!=null&&b.e2!=null)b.tk=b.e2-b.e1;
   S.bills.push(b);
   if(b.e1!=null){S.readings=S.readings.filter(r=>!(r.t===t&&r.d===bas));S.readings.push({id:uid(),t,d:bas,v:b.e1})}
   if(b.e2!=null){S.readings=S.readings.filter(r=>!(r.t===t&&r.d===bit));S.readings.push({id:uid(),t,d:bit,v:b.e2})}
   const day=ymd(dn(bit)).d;
-  if(t==="gas"){S.gas.day=day;if(b.kat)S.gas.kat=b.kat;if(b.tk&&b.tl){const p=b.tl/b.tk;if(b.kad==="2")S.gas.k2=Math.round(p*100)/100;else{S.gas.k1=Math.round(p*100)/100;S.gas.k2=Math.round(p*18/10.625*100)/100}}}
+  if(t==="gas"){S.gas.day=day;if(b.kat)S.gas.kat=b.kat;if(b.tk&&b.tl&&b.kad==="k"&&b.g1>0&&b.g2>0){const q=S.gas.k2/S.gas.k1;const p1=b.tl/(b.tk*(b.g1+b.g2*q)/(b.g1+b.g2));S.gas.k1=Math.round(p1*100)/100;S.gas.k2=Math.round(p1*q*100)/100}
+  else if(b.tk&&b.tl){const p=b.tl/b.tk;if(b.kad==="2")S.gas.k2=Math.round(p*100)/100;else{S.gas.k1=Math.round(p*100)/100;S.gas.k2=Math.round(p*18/10.625*100)/100}}}
   if(t==="elec"){S.elec.day=day;const kf=window._kf||{};if(kf.pd>0)S.elec.pd=kf.pd;if(kf.py>0)S.elec.py=kf.py;window._kf=null;if(b.tk&&b.tl)S.elec.p=Math.round(b.tl/b.tk*100)/100;if(b.ytd!=null){S.elec.ytd=b.ytd;S.elec.ytdt=bit}}
   if(t==="water"){S.water.day=day}
   save();fillSettings();render();$("billSaved").textContent="Kaydedildi. Fiyatlar ve okuma günü bu faturaya göre güncellendi."};
@@ -1045,17 +1189,25 @@ function parseBillText(T){const L=T.split(/\r?\n/).map(x=>x.replace(/[|“”"©
   r.tur=/kwh|elektrik|enerji\s*t[üu]k/i.test(all)?"elec":/s\s?m\s?3|sm³|do[gğ]al\s*gaz|d[üu]zeltme\s*katsay/i.test(all)?"gas":/at[ıi]k\s*su|\bsu\b|m3|m³/i.test(all)?"water":null;
   let dl=L.filter(l=>/okuma|d[öo]nem/i.test(l)).map(datesIn).find(d=>d.length>=2&&d[1]>d[0]);
   if(!dl){const ad=datesIn(all);for(let k=0;k+1<ad.length;k++){const g=(new Date(ad[k+1])-new Date(ad[k]))/864e5;if(g>=20&&g<=62){dl=[ad[k],ad[k+1]];break}}}
+  {const il=L.find(l=>/[İi]LK\s*OKUMA/i.test(l)&&datesIn(l).length),sl=L.find(l=>/SON\s*OKUMA/i.test(l)&&datesIn(l).length);
+   if(il&&sl){const a=datesIn(il)[0],b=datesIn(sl)[0];if(b>a)dl=[a,b]}}
   if(dl){r.ilk_okuma=dl[0];r.son_okuma=dl[1]}
   const gl=find(/okuma\s*\(?\s*g[üu]n/i);if(gl){const n=numsIn(gl).filter(v=>v>=20&&v<=62);if(n.length)r.gun=n[n.length-1]}
-  const el=L.find(l=>/endeks/i.test(l)&&!/g[üu]nd[üu]z|puant|gece/i.test(l)&&numsIn(l).length>=2);
+  {const i1=L.find(l=>/[İi]LK\s*ENDEKS/i.test(l)),s1=L.find(l=>/SON\s*ENDEKS/i.test(l));
+   if(i1&&s1&&i1!==s1){const a=numsIn(i1.replace(/.*ENDEKS/i,""))[0],b=numsIn(s1.replace(/.*ENDEKS/i,""))[0];if(a!=null&&b!=null&&b>a){r.ilk_endeks=a;r.son_endeks=b}}}
+  const el=r.ilk_endeks!=null?null:L.find(l=>/endeks/i.test(l)&&!/g[üu]nd[üu]z|puant|gece/i.test(l)&&numsIn(l).length>=2);
   if(el){const n=numsIn(el);r.ilk_endeks=n[0];r.son_endeks=n[1];if(n.length>=3)r._fark=n[2]}
+  for(const [k,re] of [["_gz",/g[üu]nd[üu]z/i],["_pt",/puant/i],["_gc",/gece/i]]){const l=L.find(x=>re.test(x)&&/endeks/i.test(x));if(l){const n=numsIn(l.replace(/.*endeks\)?/i,""));if(n.length>=3&&Math.abs(n[1]-n[0]-n[2])<0.02)r[k]=n[2]}}
   const dk=find(/d[üu][şs][üu]k\s*kad/i),yk=find(/y[üu]ksek\s*kad/i);
   if(dk){const n=numsIn(dk);if(n.length>=2){r._qd=n[0];r.dusuk_kademe_fiyat=n[1]}}
   if(yk){const n=numsIn(yk);if(n.length>=2){r._qy=n[0];r.yuksek_kademe_fiyat=n[1]}}
   if(r._qd!=null)r.tuketim=Math.round((r._qd+(r._qy||0))*1000)/1000;else if(r._fark!=null)r.tuketim=r._fark;
   if(r.tur==="gas"){const k=find(/d[üu]zeltme\s*katsay/i);if(k){const v=numsIn(k).find(v=>v>0.6&&v<1.2);if(v)r.duzeltme_katsayisi=v}
+    const dh=L.find(l=>/d[üu]zeltilmi[şs]\s*hac[ıi]m/i.test(l));if(dh){const v=numsIn(dh.replace(/\(m3\)|m3|m³/gi," ")).filter(v=>v>0&&v<3000);if(v.length)r.tuketim=v[0]}
+    const k1=all.match(/kademe\s*1\s*t[üu]ketimi\s*\(([\d.,]+)\s*kwh\)\s*kar[şs]il[ıi][gğ][ıi]\s*([\d.,]+)\s*TL/i),k2=all.match(/kademe\s*2\s*t[üu]ketimi\s*\(([\d.,]+)\s*kwh\)\s*kar[şs]il[ıi][gğ][ıi]\s*([\d.,]+)\s*TL/i);
+    if(k1)r._gk1=[trNum(k1[1]),trNum(k1[2])];if(k2)r._gk2=[trNum(k2[1]),trNum(k2[2])];
     const g=L.find(l=>/t[üu]ketim|esas/i.test(l)&&/s\s?m\s?3|sm³/i.test(l)&&numsIn(l).length);if(g&&r.tuketim==null){const v=numsIn(g).filter(v=>v>0&&v<3000);if(v.length)r.tuketim=v[v.length-1]}
-    if(/2\.\s*kademe|kademe\s*2|kademe-2/i.test(all))r.kademe=2;else if(/1\.\s*kademe|kademe\s*1|kademe-1/i.test(all))r.kademe=1}
+    if(r._gk1&&r._gk2&&r._gk1[0]>0&&r._gk2[0]>0)r.kademe=null;else if(r._gk2&&r._gk2[0]>0)r.kademe=2;else if(r._gk1)r.kademe=1;else if(/2\.\s*kademe|kademe\s*2|kademe-2/i.test(all))r.kademe=2;else if(/1\.\s*kademe|kademe\s*1|kademe-1/i.test(all))r.kademe=1}
   if(r.tur==="water"&&r.tuketim==null){const g=L.find(l=>/t[üu]ketim/i.test(l)&&/m3|m³/i.test(l)&&numsIn(l).length);if(g){const v=numsIn(g).filter(v=>v>0&&v<500);if(v.length)r.tuketim=v[0]}}
   let tl=null;const ti=L.findIndex(l=>/[öo]denecek\s*tutar/i.test(l));
   if(ti>=0){for(let k=ti;k<Math.min(L.length,ti+4)&&tl==null;k++){const n=numsIn(L[k]).filter(v=>v>0);if(n.length)tl=n[k===ti?n.length-1:0]}}
@@ -1070,16 +1222,17 @@ function parseBillText(T){const L=T.split(/\r?\n/).map(x=>x.replace(/[|“”"©
     if(ks!=null&&(r._fark==null||Math.abs(ks-r._fark)<=1))r.tuketim=Math.round(ks*1000)/1000;else{delete r._qd;delete r._qy;if(r._fark!=null)r.tuketim=r._fark}
     if(r.gun&&r.tuketim!=null&&r._qd!=null&&Math.abs(r._qd-r.gun*8)>1&&r._qd<r.tuketim){delete r._qd;delete r._qy}}
   if(r.tutar_tl!=null&&!(r.tutar_tl>0&&r.tutar_tl<200000))delete r.tutar_tl;
-  const ds=all.match(/t[üu]ketim bedeli\s*([\d.,]+)\s*TL.{0,120}?([\d.,]+)\s*TL\s*mahsup/i);if(ds){r._gercek=trNum(ds[1]);r._destek=trNum(ds[2])}
+  const ds=all.match(/t[üu]ketim bedeli\s*([\d.,]+)\s*TL.{0,120}?([\d.,]+)\s*TL\s*mahsup/i)||all.match(/t[üu]ketim bedeli\s*([\d.,]+)\s*TL.{0,40}?([\d.,]+)\s*TL.{0,6}l[ıi]k\s*devlet/i);if(ds){r._gercek=trNum(ds[1]);r._destek=trNum(ds[2])}
   return r}
 function billScore(j){return ["ilk_okuma","son_okuma","tuketim","tutar_tl","ilk_endeks"].filter(k=>j&&j[k]!=null).length}
-function fillBill(j){["b_bas","b_bit","b_e1","b_e2","b_tk","b_kat","b_tl","b_ytd"].forEach(i=>$(i).value="");if(["gas","elec","water"].includes(j.tur))$("b_tur").value=j.tur;
+function fillBill(j){["b_bas","b_bit","b_e1","b_e2","b_tk","b_kat","b_tl","b_ytd","b_gz","b_pt","b_gc","b_g1","b_g2"].forEach(i=>$(i).value="");if(["gas","elec","water"].includes(j.tur))$("b_tur").value=j.tur;
   const set=(id,v)=>{if(v!=null&&v!=="")$(id).value=v};
   set("b_bas",j.ilk_okuma);set("b_bit",j.son_okuma);set("b_e1",j.ilk_endeks);set("b_e2",j.son_endeks);set("b_tk",j.tuketim);set("b_kat",j.duzeltme_katsayisi);set("b_tl",j.tutar_tl);
-  $("b_kad").value=j.kademe?String(j.kademe):"";set("b_ytd",j.yillik_tuketim_kwh);window._kf={pd:j.dusuk_kademe_fiyat,py:j.yuksek_kademe_fiyat}}
-function billDone(j,src){const n=billScore(j);if(n<2){$("billStatus").textContent="Faturadan rakam çıkarılamadı. Daha yakından, düz ve aydınlık çek ya da elle gir.";return}
+  $("b_kad").value=j.kademe?String(j.kademe):"";if(j._gk1&&j._gk2&&j._gk2[0]>0){$("b_kad").value="k";const D=(j.ilk_okuma&&j.son_okuma)?Math.round((new Date(j.son_okuma)-new Date(j.ilk_okuma))/864e5):30;const g2=Math.round(D*j._gk2[0]/(j._gk1[0]+j._gk2[0]));$("b_g1").value=D-g2;$("b_g2").value=g2}kmixGoster();set("b_ytd",j.yillik_tuketim_kwh);set("b_gz",j._gz);set("b_pt",j._pt);set("b_gc",j._gc);window._kf={pd:j.dusuk_kademe_fiyat,py:j.yuksek_kademe_fiyat}}
+function billDone(j,src){const n=billScore(j);if(n<2){$("billStatus").textContent="Faturadan rakam çıkarılamadı. Nokta vuruşlu yazıcıyla basılmış kâğıt faturalarda (doğalgaz, su) bu sık olur. En iyisi dağıtım şirketinin internet sitesinden ya da e-Devlet'ten faturanın PDF'ini indirip seçmek. Ya da aşağıdaki forma elle yaz.";$("b_tur").scrollIntoView({behavior:"smooth",block:"center"});return}
   fillBill(j);let t=`${src} okundu (${n}/5 ana alan). Rakamları faturayla karşılaştır, eksikleri yaz, sonra Kaydet'e bas.`;
   if(j._qd!=null)t+=` Düşük kademe ${f0(j._qd)} kWh, yüksek kademe ${f0(j._qy||0)} kWh.`;
+  if(j._gk1&&j._gk2&&j._gk2[0]>0)t+=` Bu faturada tüketimin bir kısmı 1. kademe (${f0(j._gk1[0])} kWh, ${tl(j._gk1[1])}), bir kısmı 2. kademe (${f0(j._gk2[0])} kWh, ${tl(j._gk2[1])}). Sebep: dönem iki aya yayılıyor ve fatura tüketimi günlere eşit bölüyor.`;
   if(j._gercek&&j._destek)t+=` Devlet desteği: gerçek bedel ${tl(j._gercek)}, devletin ödediği ${tl(j._destek)}.`;
   $("billStatus").textContent=t;$("b_tur").scrollIntoView({behavior:"smooth",block:"center"})}
 async function claudeRead(files){$("billStatus").textContent="Claude faturayı okuyor… (ilk kullanımda izin isteyebilir)";
